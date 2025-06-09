@@ -8,11 +8,10 @@
   <a href="#license--disclaimer"><img src="https://img.shields.io/badge/license-Educational%20Use-orange.svg" /></a>
 </p>
 
-## ⚠️ **IMPORTANT LEGAL DISCLAIMER**
-
-**This software is provided for educational and research purposes only. Using automated input assistance in Counter-Strike 2 may violate Valve's Terms of Service and could result in a VAC (Valve Anti-Cheat) ban. Use at your own risk and responsibility. The developers are not responsible for any consequences arising from the use of this software.**
-
----
+> [!CAUTION]
+> This software is provided for educational and research purposes only.
+> Using automated input assistance in Counter-Strike 2 may violate Valve's Terms of Service and could result in a VAC (Valve Anti-Cheat) ban.
+> Use at your own risk. The developers are not responsible for any consequences.
 
 ## 🎯 **Key Features**
 
@@ -172,27 +171,24 @@ artanis-rcs/
 
 The system includes precise recoil patterns for 16 automatic weapons:
 
-### **Assault Rifles**
-- **AK-47**
-- **M4A4**
-- **M4A1-S**
-- **Galil AR**
-- **FAMAS**
-- **SG 553**
-- **AUG**
-
-### **Submachine Guns**
-- **P90**
-- **PP-Bizon**
-- **UMP-45**
-- **MAC-10**
-- **MP5-SD**
-- **MP7**
-- **MP9**
-
-### **Machine Guns & Pistols**
-- **M249**
-- **CZ75-Auto**
+| Category          | Weapon        | CSV File       |
+|-------------------|--------------|----------------|
+| **Rifles**        | AK-47        | `ak47.csv`     |
+|                   | M4A4         | `m4a4.csv`     |
+|                   | M4A1-S       | `m4a1.csv`     |
+|                   | Galil AR     | `galilar.csv`  |
+|                   | FAMAS        | `famas.csv`    |
+|                   | SG 553       | `sg553.csv`    |
+|                   | AUG          | `aug.csv`      |
+| **SMGs**          | P90          | `p90.csv`      |
+|                   | PP-Bizon     | `bizon.csv`    |
+|                   | UMP-45       | `ump45.csv`    |
+|                   | MAC-10       | `mac10.csv`    |
+|                   | MP5-SD       | `mp5sd.csv`    |
+|                   | MP7          | `mp7.csv`      |
+|                   | MP9          | `mp9.csv`      |
+| **Heavy**         | M249         | `m249.csv`     |
+| **Pistols**       | CZ75-Auto    | `cz75.csv`     |
 
 ---
 
@@ -305,15 +301,6 @@ The built-in visualization tab display the recoil pattern trajectory
 
 ---
 
-## 🔧 **Advanced Configuration**
-
-### **Timing Parameter Explanation**
-- **multiple**: Overall compensation strength multiplier
-- **sleep_divider**: Controls timing between compensation adjustments
-- **sleep_suber**: Fine-tuning for timing intervals
-
----
-
 ## 🤝 **Contributing**
 
 ### **Code Style Standards**
@@ -349,7 +336,7 @@ When reporting issues, please include:
 
 ### **GSI Documentation**
 - [Valve Developer Community - Game State Integration](https://developer.valvesoftware.com/wiki/Counter-Strike:_Global_Offensive_Game_State_Integration)
-- [CS2 GSI Implementation Guide](https://github.com/antonpup/CounterStrike2GSI)
+- [CS2 GSI Implementation](https://github.com/antonpup/CounterStrike2GSI)
 
 ---
 
@@ -366,6 +353,6 @@ This project is released under the MIT License with the following additional ter
 - **numpy**: Numerical computing library by NumPy Developers
 - **pywin32**: Windows API access by Mark Hammond
 
-### **Pattern and algorithms Data Sources**
-Recoil patterns derived from CS2 chinese community.
-Algorithms derived from this project [ NewTennng / csgoPress-the-gun](https://github.com/NewTennng/csgoPress-the-gun/tree/main)
+### **Pattern and Algorithms Data Sources**
+- Recoil patterns derived from CS2 chinese community.
+- Algorithms derived from this project [ NewTennng / csgoPress-the-gun](https://github.com/NewTennng/csgoPress-the-gun/tree/main)
