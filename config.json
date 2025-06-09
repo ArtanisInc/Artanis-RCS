@@ -1,0 +1,155 @@
+{
+    "game_sensitivity": 1.08,
+    "features": {
+        "tts_enabled": true,
+        "input_souris": "sendinput"
+    },
+    "gsi": {
+        "enabled": true,
+        "auto_weapon_switch": true,
+        "auto_rcs_control": true,
+        "low_ammo_threshold": 5,
+        "server_host": "127.0.0.1",
+        "server_port": 59873,
+        "update_rate_limit": 0.1,
+        "transition_delay": 0.2,
+        "startup_grace_period": 3.0,
+        "require_user_initiation": true,
+        "announce_weapon_changes": false
+    },
+    "hotkeys": {
+        "exit": "END",
+        "toggle_recoil": "INSERT",
+        "toggle_weapon_detection": "HOME"
+    },
+    "weapons": [
+        {
+            "name": "ak47",
+            "display_name": "AK-47",
+            "length": 30,
+            "multiple": 6,
+            "sleep_divider": 6,
+            "sleep_suber": -0.1
+        },
+        {
+            "name": "m4a4",
+            "display_name": "M4A4",
+            "length": 30,
+            "multiple": 4,
+            "sleep_divider": 4,
+            "sleep_suber": -0.5
+        },
+        {
+            "name": "m4a1",
+            "display_name": "M4A1-S",
+            "length": 20,
+            "multiple": 4,
+            "sleep_divider": 4.0,
+            "sleep_suber": -0.6
+        },
+        {
+            "name": "galil",
+            "display_name": "Galil AR",
+            "length": 35,
+            "multiple": 4,
+            "sleep_divider": 4,
+            "sleep_suber": -0.8
+        },
+        {
+            "name": "famas",
+            "display_name": "FAMAS",
+            "length": 25,
+            "multiple": 4,
+            "sleep_divider": 4,
+            "sleep_suber": -0.4
+        },
+        {
+            "name": "sg553",
+            "display_name": "SG 553",
+            "length": 30,
+            "multiple": 4,
+            "sleep_divider": 4,
+            "sleep_suber": -0.9
+        },
+        {
+            "name": "aug",
+            "display_name": "AUG",
+            "length": 30,
+            "multiple": 4,
+            "sleep_divider": 4,
+            "sleep_suber": -0.9
+        },
+        {
+            "name": "p90",
+            "display_name": "P90",
+            "length": 50,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": -0.7
+        },
+        {
+            "name": "bizon",
+            "display_name": "PP-Bizon",
+            "length": 64,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": 0.9
+        },
+        {
+            "name": "ump45",
+            "display_name": "UMP-45",
+            "length": 25,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": -0.4
+        },
+        {
+            "name": "mac10",
+            "display_name": "MAC-10",
+            "length": 30,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": -2.2
+        },
+        {
+            "name": "mp5sd",
+            "display_name": "MP5-SD",
+            "length": 30,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": 0
+        },
+        {
+            "name": "mp7",
+            "display_name": "MP7",
+            "length": 30,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": 0.1
+        },
+        {
+            "name": "mp9",
+            "display_name": "MP9",
+            "length": 30,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": -0.3
+        },
+        {
+            "name": "m249",
+            "display_name": "M249",
+            "length": 100,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": -1
+        },
+        {
+            "name": "cz75",
+            "display_name": "CZ75-Auto",
+            "length": 12,
+            "multiple": 3,
+            "sleep_divider": 3,
+            "sleep_suber": -3
+        }
+    ]
+}

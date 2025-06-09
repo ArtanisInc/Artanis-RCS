@@ -1,0 +1,4 @@
+PyQt5
+matplotlib
+numpy
+pywin32
