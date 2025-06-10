@@ -15,34 +15,22 @@
 
 ## 🎯 **Key Features**
 
-### **Multi-Weapon Support**
-- **16 Weapon Patterns**: Comprehensive recoil patterns for all major automatic weapons
-- **Precise Compensation**: CSV-based pattern storage with millimeter accuracy
-- **Customizable Parameters**: Per-weapon timing, sensitivity, and adjustment factors
+🔫 **Multi-Weapon Support**
+* 16 precise recoil patterns (CSV format)
+* Human-friendly recoil compensation
 
-### **Game State Integration (GSI)**
-- **Automatic Weapon Detection**: Real-time weapon identification via CS2's built-in GSI
-- **Seamless Transitions**: Instant pattern switching when changing weapons
-- **Low Ammo Notifications**: Configurable threshold warnings
-- **Real-time Monitoring**: Live game state tracking and response
+🎮 **GSI (Game State Integration)**
+* Automatic weapon detection (CS2)
+* Instant pattern switching
 
-### **Advanced User Interface**
-- **PyQt5 GUI**: Modern, intuitive interface with tabbed configuration
-- **Pattern Visualization**: Built-in recoil pattern display and analysis
-- **Real-time Status**: Live feedback on system state and active weapon
-- **Configuration Management**: Easy adjustment of all system parameters
+🖥️ **Advanced User Interface**
+* Modern, intuitive PyQt5 GUI
+* Recoil pattern visualization
+* Live system status and configuration management
 
-### **Audio Feedback System**
-- **Text-to-Speech (TTS)**: Contextual audio feedback for system events
-- **Priority-based Announcements**: Critical alerts take precedence
-- **Weapon Change Notifications**: Optional audio confirmation of weapon switches
-- **Error Reporting**: Audible alerts for system errors or failures
-
-### **Hotkey Control System**
-- **Global Hotkeys**: System-wide keyboard shortcuts (INSERT, HOME, END)
-- **Instant Toggle**: Quick enable/disable of recoil compensation
-- **Weapon Detection Control**: Manual override of automatic detection
-- **Emergency Exit**: Immediate system shutdown capability
+🔊 **Audio Feedback**
+* Text-to-speech (TTS) for system events
+* Voice alerts for critical events and weapon changes
 
 ---
 
@@ -315,12 +303,6 @@ The built-in visualization tab display the recoil pattern trajectory
 3. Implement changes with proper testing
 4. Update documentation as needed
 5. Submit pull request with detailed description
-
-### **Testing Requirements**
-- Test all weapon patterns for accuracy
-- Verify GSI integration functionality
-- Validate hotkey system operation
-- Confirm TTS system reliability
 
 ---
 
