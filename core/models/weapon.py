@@ -128,7 +128,7 @@ class WeaponProfile:
         self.logger = logging.getLogger(f"Weapon.{name}")
         self._calculate_pattern()
 
-        self.logger.info(
+        self.logger.debug(
             "Weapon '%s' initialized with %s calculated points", name, len(self.calculated_pattern))
 
     def _calculate_pattern(self) -> None:

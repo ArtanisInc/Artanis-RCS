@@ -134,7 +134,7 @@ class HotkeyService:
         self.weapon_hotkeys: Dict[str, str] = {}
 
         self._update_hotkey_mappings()
-        self.logger.info("Hotkey service initialized")
+        self.logger.debug("Hotkey service initialized")
 
     def _update_hotkey_mappings(self) -> None:
         """Update hotkey mappings from configuration."""
@@ -165,7 +165,7 @@ class HotkeyService:
                         self.weapon_hotkeys[weapon_name] = key_name
                         self.hotkey_mappings[weapon_name] = vk_code
 
-            self.logger.info(
+            self.logger.debug(
                 "Hotkey mappings updated: %s active", len(self.hotkey_mappings))
 
         except Exception as e:
@@ -201,7 +201,7 @@ class HotkeyService:
             self.monitoring_thread.start()
 
             self.is_monitoring = True
-            self.logger.info("Hotkey monitoring started")
+            self.logger.debug("Hotkey monitoring started")
             return True
 
         except Exception as e:
@@ -255,14 +255,19 @@ class HotkeyService:
             "Weapon detection service reference established for hotkey management")
 
     def _handle_hotkey_trigger(self, identifier: str) -> None:
-        """Handle hotkey trigger event with conditional weapon hotkey processing."""
+        """Handle hotkey trigger event with conditional recoil and weapon hotkey processing."""
         try:
             self.logger.debug("Hotkey triggered: %s", identifier)
 
-            # System actions - toujours actives
+            # System actions
             if identifier == "toggle_recoil":
-                self.callback_manager.trigger_action(
-                    HotkeyAction.TOGGLE_RECOIL)
+                # Vérifier si l'activation manuelle est autorisée
+                if self._should_process_recoil_hotkey():
+                    self.callback_manager.trigger_action(
+                        HotkeyAction.TOGGLE_RECOIL)
+                else:
+                    self.logger.info(
+                        "Recoil toggle hotkey ignored: automatic weapon detection active")
             elif identifier == "toggle_weapon_detection":
                 self.callback_manager.trigger_action(
                     HotkeyAction.TOGGLE_WEAPON_DETECTION)
@@ -283,6 +288,20 @@ class HotkeyService:
         except Exception as e:
             self.logger.error(
                 "Hotkey trigger handling failed for %s: %s", identifier, e)
+
+    def _should_process_recoil_hotkey(self) -> bool:
+        """Determine if recoil toggle hotkey should be processed based on detection service state."""
+        # Si le service de détection n'est pas disponible, toujours autoriser
+        if not self.weapon_detection_service:
+            return True
+
+        # Si la détection automatique est active, désactiver le hotkey de compensation
+        if self.weapon_detection_service.enabled:
+            self.logger.debug(
+                "Recoil hotkey disabled: automatic weapon detection active")
+            return False
+
+        return True
 
     def _should_process_weapon_hotkey(self) -> bool:
         """Determine if weapon hotkeys should be processed based on detection service state."""

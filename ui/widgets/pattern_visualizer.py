@@ -243,10 +243,15 @@ class PatternVisualizer(FigureCanvasQTAgg):
 
     def clear_pattern(self) -> None:
         """Clear pattern data and visualization."""
-        self.pattern_data = []
-        self.plot_renderer.clear_plot()
-        self.fig.tight_layout()
-        self.draw()
+        try:
+            self.pattern_data = []
+            self.plot_renderer.clear_plot()
+            self.fig.tight_layout()
+            self.draw()
+        except Exception as e:
+            self.logger.error("Failed to clear pattern: %s", e)
+            # Last resort - just clear data
+            self.pattern_data = []
 
     def has_pattern(self) -> bool:
         """Check if pattern data is available."""
@@ -289,34 +294,43 @@ class PatternVisualizer(FigureCanvasQTAgg):
 
     def redraw(self) -> None:
         """Redraw the complete visualization."""
-        if not self.pattern_data:
-            self.clear_pattern()
-            return
+        try:
+            if not self.pattern_data:
+                self.clear_pattern()
+                return
 
-        # Clear and setup
-        self.plot_renderer.clear_plot()
+            # Clear and setup
+            self.plot_renderer.clear_plot()
 
-        # Calculate positions
-        positions = self.calculator.calculate_cumulative_positions(
-            self.pattern_data, self.invert_y
-        )
+            # Calculate positions
+            positions = self.calculator.calculate_cumulative_positions(
+                self.pattern_data, self.invert_y
+            )
 
-        # Render pattern
-        self.plot_renderer.render_pattern(
-            positions, self.show_points, self.show_numbers,
-            self.line_color, self.point_color,
-            self.line_width, self.point_size
-        )
+            # Render pattern
+            self.plot_renderer.render_pattern(
+                positions, self.show_points, self.show_numbers,
+                self.line_color, self.point_color,
+                self.line_width, self.point_size
+            )
 
-        # Set optimal view
-        bounds = self.calculator.calculate_view_bounds(positions)
-        self.plot_renderer.set_view_bounds(bounds)
+            # Set optimal view
+            bounds = self.calculator.calculate_view_bounds(positions)
+            self.plot_renderer.set_view_bounds(bounds)
 
-        # Finalize
-        self.fig.tight_layout()
-        self.draw()
+            # Finalize
+            self.fig.tight_layout()
+            self.draw()
 
-        self.logger.debug("Pattern redrawn (%s points)", len(self.pattern_data))
+            self.logger.debug("Pattern redrawn (%s points)", len(self.pattern_data))
+
+        except Exception as e:
+            self.logger.error("Pattern redraw failed: %s", e)
+            # Try to recover by clearing and redrawing empty
+            try:
+                self.clear_pattern()
+            except Exception:
+                pass  # If clear fails too, just give up silently
 
     def reset_view(self) -> None:
         """Reset view to show entire pattern optimally."""

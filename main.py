@@ -57,7 +57,13 @@ def initialize_system() -> Tuple:
         recoil_service = RecoilService(
             config_service, input_service, tts_service)
 
-        gsi_service = GSIService()
+        gsi_config = config_service.config.get("gsi", {})
+        gsi_service = GSIService(
+            host=gsi_config.get("server_host", "127.0.0.1"),
+            port=gsi_config.get("server_port", 59873),
+            gsi_config=gsi_config,
+            auto_generate_config=True
+        )
         weapon_detection_service = WeaponDetectionService(recoil_service)
 
         hotkey_service = HotkeyService(input_service, config_service)
@@ -65,12 +71,20 @@ def initialize_system() -> Tuple:
 
         recoil_service.set_weapon_detection_service(weapon_detection_service)
 
-        gsi_config = config_service.config.get("gsi", {})
         if gsi_config.get("enabled", True):
             weapon_detection_service.configure(gsi_config)
 
-        logger.info(
-            "System initialized successfully with conditional hotkey management")
+        # Log grouped services summary
+        services_summary = [
+            "Input",
+            "Timing (10MHz/1ns)",
+            "Recoil",
+            "Weapon Detection",
+            f"Hotkeys ({len(hotkey_service.hotkey_mappings)} active)"
+        ]
+        logger.info("Core services initialized: %s", ", ".join(services_summary))
+
+        logger.info("System initialized successfully")
         return (config_service, input_service, recoil_service, hotkey_service,
                 tts_service, gsi_service, weapon_detection_service)
 
@@ -98,7 +112,7 @@ def setup_gsi_integration(gsi_service: GSIService,
             logger.error("Failed to enable weapon detection")
             return False
 
-        logger.info("GSI integration setup completed")
+        logger.info("GSI integration ready: server started, weapon detection enabled")
         return True
 
     except Exception as e:
@@ -108,11 +122,11 @@ def setup_gsi_integration(gsi_service: GSIService,
 
 def create_gui(config_service, recoil_service, hotkey_service, tts_service,
                gsi_service=None, weapon_detection_service=None):
-    """Create main GUI window with GSI integration."""
+    """Create main GUI window."""
     from ui.views.main_window import MainWindow
 
     logger = logging.getLogger("GUI")
-    logger.info("Creating GUI with GSI integration...")
+    logger.debug("Creating GUI...")
 
     try:
         window = MainWindow(recoil_service, config_service)
@@ -125,7 +139,7 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
         setup_hotkey_callbacks(window, recoil_service, hotkey_service,
                                tts_service, weapon_detection_service)
 
-        logger.info("GUI created successfully with GSI")
+        logger.info("GUI initialized: Main window, Config tab, Visualization tab")
         return window
 
     except Exception as e:
@@ -162,7 +176,8 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                 if recoil_service.current_weapon != current_weapon:
                     recoil_service.set_weapon(current_weapon)
 
-                success = recoil_service.start_compensation()
+                success = recoil_service.start_compensation(
+                    allow_manual_when_auto_enabled=False)
                 if success and weapon_detection_service:
                     # Mark that user has manually initiated RCS
                     weapon_detection_service.set_user_initiated_start(True)
@@ -171,7 +186,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                     tts_service.speak("Start error", TTSPriority.CRITICAL)
 
             action_text = "started" if recoil_service.active else "stopped"
-            logger.info("Compensation %s via hotkey", action_text)
+            logger.debug("Compensation %s via hotkey", action_text)
 
         except Exception as e:
             logger.error("Toggle compensation error: %s", e)
@@ -188,7 +203,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                     success = weapon_detection_service.enable()
                     status_text = "enabled" if success else "enable failed"
 
-                logger.info("Weapon detection %s via hotkey", status_text)
+                logger.debug("Weapon detection %s via hotkey", status_text)
 
                 if success:
                     tts_service.speak(f"Weapon detection {status_text}",
@@ -205,7 +220,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
 
     def exit_action():
         """Exit application."""
-        logger.info("Closing application via hotkey")
+        logger.debug("Closing application via hotkey")
         tts_service.speak("Closing script", TTSPriority.HIGH)
         time.sleep(1.5)
         main_window.close()
@@ -237,7 +252,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                     tts_service.speak_interrupt_previous(clean_name,
                                                          TTSPriority.HIGH)
 
-                logger.info("Weapon selected via hotkey: %s", weapon_name)
+                logger.debug("Weapon selected via hotkey: %s", weapon_name)
             else:
                 logger.warning("Weapon not found in UI: %s", weapon_name)
                 tts_service.speak("Weapon not found", TTSPriority.HIGH)
@@ -257,14 +272,14 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
         hotkey_service.register_weapon_callback(weapon_select_action)
 
         hotkey_service.start_monitoring()
-        logger.info("Hotkey callbacks configured with TTS coordination")
+        logger.debug("Hotkey callbacks configured")
 
     except Exception as e:
         logger.error("Hotkey callback setup failed: %s", e)
 
 
 def main():
-    """Main entry point with GSI integration."""
+    """Main entry point."""
     logger = setup_logging()
 
     try:
@@ -312,12 +327,11 @@ def main():
 
         app.aboutToQuit.connect(cleanup_on_exit)
 
+        logger.info("=== RCS System Started ===")
         if gsi_service:
-            logger.info("=== RCS System with GSI Integration Started ===")
             tts_service.speak("RCS system with weapon detection ready",
                               TTSPriority.HIGH)
         else:
-            logger.info("=== RCS System Started (GSI Disabled) ===")
             tts_service.speak("RCS system ready", TTSPriority.HIGH)
 
         sys.exit(app.exec_())

@@ -131,7 +131,11 @@ class WeaponManager:
                 continue
 
         self.profiles = profiles
-        self.logger.info("Loaded %s weapon profiles", len(profiles))
+        if profiles:
+            weapon_names = ", ".join(sorted(profiles.keys()))
+            self.logger.info("Loaded %s weapon profiles: %s", len(profiles), weapon_names)
+        else:
+            self.logger.warning("No weapon profiles loaded")
         return profiles
 
     def update_weapon_sensitivity(

@@ -335,7 +335,7 @@ class ConfigTab(QWidget):
         self._apply_styles()
         self._load_data()
 
-        self.logger.info("Configuration tab initialized")
+        self.logger.debug("Configuration tab initialized")
 
     def _setup_ui(self):
         """Setup main UI layout."""
@@ -740,3 +740,18 @@ class ConfigTab(QWidget):
         if index < 0:
             return ""
         return self.global_weapon_section.weapon_combo.currentData() or ""
+
+    def set_weapon_controls_enabled(self, enabled: bool):
+        """Enable/disable weapon selection controls based on automatic detection status."""
+        try:
+            self.global_weapon_section.weapon_combo.setEnabled(enabled)
+
+            if not enabled:
+                self.global_weapon_section.weapon_combo.setToolTip(
+                    "Weapon selection disabled - Automatic weapon detection is active")
+            else:
+                self.global_weapon_section.weapon_combo.setToolTip(
+                    "Select the active weapon for recoil compensation")
+
+        except Exception as e:
+            self.logger.error("Weapon controls state update error: %s", e)

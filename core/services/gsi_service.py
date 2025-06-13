@@ -5,10 +5,147 @@ import json
 import logging
 import threading
 import time
+import winreg
+from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 from core.models.player_state import PlayerState
+
+
+class GSIConfigService:
+    """Service for managing GSI configuration file generation."""
+
+    def __init__(self):
+        self.logger = logging.getLogger("GSIConfigService")
+        self.config_name = "rcs"
+        self.config_filename = f"gamestate_integration_{self.config_name}.cfg"
+
+    def generate_config_file(self, gsi_config: Dict[str, Any]) -> bool:
+        """
+        Generate GSI configuration file if it doesn't exist.
+
+        Args:
+            gsi_config: GSI configuration from main config
+
+        Returns:
+            bool: True if file exists or was created successfully
+        """
+        try:
+            cs2_config_path = self._find_cs2_config_directory()
+
+            if not cs2_config_path:
+                self.logger.error("Could not locate CS2 configuration directory")
+                return False
+
+            config_file_path = cs2_config_path / self.config_filename
+
+            if config_file_path.exists():
+                self.logger.debug("GSI config file already exists: %s", config_file_path)
+                return True
+
+            # Generate and write the config file
+            config_content = self._generate_config_content(gsi_config)
+
+            with open(config_file_path, 'w', encoding='utf-8') as f:
+                f.write(config_content)
+
+            self.logger.info("GSI config file created: %s", config_file_path)
+            return True
+
+        except Exception as e:
+            self.logger.error("Failed to generate GSI config file: %s", e)
+            return False
+
+    def _find_cs2_config_directory(self) -> Optional[Path]:
+        """Find CS2 configuration directory."""
+        try:
+            steam_paths = self._get_steam_paths()
+
+            for steam_path in steam_paths:
+                if not steam_path.exists():
+                    continue
+
+                # CS2 is installed in Counter-Strike Global Offensive folder
+                cs2_config_path = steam_path / "steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg"
+
+                if cs2_config_path.exists():
+                    self.logger.debug("Found CS2 config directory: %s", cs2_config_path)
+                    return cs2_config_path
+
+            return None
+
+        except Exception as e:
+            self.logger.error("Error finding CS2 config directory: %s", e)
+            return None
+
+    def _get_steam_paths(self) -> list[Path]:
+        """Get Steam installation paths."""
+        steam_paths = []
+
+        # Try registry paths
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                              r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
+                install_path = winreg.QueryValueEx(key, "InstallPath")[0]
+                steam_paths.append(Path(install_path))
+        except (WindowsError, FileNotFoundError):
+            pass
+
+        try:
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                              r"SOFTWARE\Valve\Steam") as key:
+                install_path = winreg.QueryValueEx(key, "SteamPath")[0]
+                steam_paths.append(Path(install_path))
+        except (WindowsError, FileNotFoundError):
+            pass
+
+        # Add common paths
+        common_paths = [
+            Path("C:/Program Files (x86)/Steam"),
+            Path("C:/Program Files/Steam"),
+            Path.home() / "Steam"
+        ]
+
+        for path in common_paths:
+            if path not in steam_paths:
+                steam_paths.append(path)
+
+        return steam_paths
+
+    def _generate_config_content(self, gsi_config: Dict[str, Any]) -> str:
+        """Generate the GSI configuration file content."""
+        host = gsi_config.get("server_host", "127.0.0.1")
+        port = gsi_config.get("server_port", 59873)
+        uri = f"http://{host}:{port}"
+
+        return f'''"Artanis RCS Integration"
+{{
+    "uri"                    "{uri}"
+    "timeout"                "5.0"
+    "buffer"                 "0.1"
+    "throttle"               "0.1"
+    "heartbeat"              "30.0"
+    "data"
+    {{
+        "provider"                 "1"      // Game version info
+        "map"                      "1"      // Map information
+        "round"                    "1"      // Round information
+        "player_id"                "1"      // Player identification
+        "player_state"             "1"      // Health, armor, flashing, etc.
+        "player_weapons"           "1"      // Weapon information (CRITICAL)
+        "player_match_stats"       "1"      // Match statistics
+        "allplayers_id"            "0"      // Other players (not needed)
+        "allplayers_state"         "0"      // Other players state (not needed)
+        "allplayers_weapons"       "0"      // Other players weapons (not needed)
+        "allplayers_match_stats"   "0"      // Other players stats (not needed)
+        "allplayers_position"      "0"      // Other players position (not needed)
+        "allgrenades"              "0"      // Grenade information (not needed)
+        "bomb"                     "0"      // Bomb information (not needed)
+        "phase_countdowns"         "0"      // Phase countdowns (not needed)
+        "player_position"          "0"      // Player position (not needed)
+    }}
+}}'''
 
 
 class GSIRequestHandler(BaseHTTPRequestHandler):
@@ -57,7 +194,9 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
 class GSIService:
     """Game State Integration service for CS2."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 59873):
+    def __init__(self, host: str = "127.0.0.1", port: int = 59873,
+                 gsi_config: Optional[Dict[str, Any]] = None,
+                 auto_generate_config: bool = True):
         self.logger = logging.getLogger("GSIService")
         self.host = host
         self.port = port
@@ -71,7 +210,20 @@ class GSIService:
         self.current_player_state: Optional[PlayerState] = None
         self.connection_status = "Disconnected"
 
-        self.logger.info("GSI Service initialized on %s:%s", host, port)
+        # Initialize GSI config service
+        self.config_service = GSIConfigService()
+
+        # Auto-generate GSI config file if enabled
+        config_status = "existing"
+        if auto_generate_config and gsi_config:
+            config_generated = self.config_service.generate_config_file(gsi_config)
+            if config_generated:
+                config_status = "auto-generated"
+            else:
+                self.logger.warning("GSI configuration file could not be generated automatically")
+                config_status = "generation failed"
+
+        self.logger.info("GSI Service ready: config %s, server on %s:%s", config_status, host, port)
 
     def start_server(self) -> bool:
         """Start the GSI HTTP server."""
@@ -94,7 +246,7 @@ class GSIService:
             self.is_running = True
             self.connection_status = "Listening"
 
-            self.logger.info("GSI server started on %s:%s", self.host, self.port)
+            self.logger.debug("GSI server started on %s:%s", self.host, self.port)
             return True
 
         except Exception as e:
@@ -245,3 +397,15 @@ class GSIService:
             "registered_callbacks": len(self.update_callbacks),
             "current_state_available": self.current_player_state is not None
         }
+
+    def generate_config_file(self, gsi_config: Dict[str, Any]) -> bool:
+        """
+        Manually generate GSI configuration file.
+
+        Args:
+            gsi_config: GSI configuration from main config
+
+        Returns:
+            bool: True if file exists or was created successfully
+        """
+        return self.config_service.generate_config_file(gsi_config)

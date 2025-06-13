@@ -69,7 +69,7 @@ artanis-rcs/
 │   ├── m4a4.csv                     # M4A4 spray pattern
 │   ├── m4a1.csv                     # M4A1-S spray pattern
 │   └── [13 additional weapon patterns]
-└── data/                           # Data repositories and persistence
+└── data/                            # Data repositories and persistence
     ├── config_repository.py         # Configuration file management
     └── csv_repository.py            # Pattern data loading and parsing
 ```
@@ -82,7 +82,6 @@ artanis-rcs/
 - **Operating System**: Windows 10/11 (required for pywin32)
 - **Python**: Version 3.8 or higher
 - **Counter-Strike 2**: Latest version with GSI capability
-- **Administrative Privileges**: May be required for input simulation
 
 ### **Dependencies**
 - **PyQt5**: Modern GUI framework
@@ -108,45 +107,7 @@ artanis-rcs/
    start.bat
    ```
 
-3. **Configure Counter-Strike 2 GSI**
-
-   Create a GSI configuration file in your CS2 config directory:
-   ```
-   Steam\steamapps\common\Counter-Strike Global Offensive\game\csgo\cfg\gamestate_integration_artanis.cfg
-   ```
-
-   With the following content:
-   ```cfg
-    "Artanis RCS Integration"
-    {
-        "uri"                    "http://127.0.0.1:59873"
-        "timeout"                "5.0"
-        "buffer"                 "0.1"
-        "throttle"               "0.1"
-        "heartbeat"              "30.0"
-        "data"
-        {
-            "provider"                 "1"      // Game version info
-            "map"                      "1"      // Map information
-            "round"                    "1"      // Round information
-            "player_id"                "1"      // Player identification
-            "player_state"             "1"      // Health, armor, flashing, etc.
-            "player_weapons"           "1"      // Weapon information (CRITICAL)
-            "player_match_stats"       "1"      // Match statistics
-            "allplayers_id"            "0"      // Other players (not needed)
-            "allplayers_state"         "0"      // Other players state (not needed)
-            "allplayers_weapons"       "0"      // Other players weapons (not needed)
-            "allplayers_match_stats"   "0"      // Other players stats (not needed)
-            "allplayers_position"      "0"      // Other players position (not needed)
-            "allgrenades"              "0"      // Grenade information (not needed)
-            "bomb"                     "0"      // Bomb information (not needed)
-            "phase_countdowns"         "0"      // Phase countdowns (not needed)
-            "player_position"          "0"      // Player position (not needed)
-        }
-    }
-   ```
-
-4. **Launch the Application**
+3. **Launch the Application**
    ```bash
    python main.py
    ```
@@ -164,7 +125,7 @@ The system includes precise recoil patterns for 16 automatic weapons:
 | **Rifles**        | AK-47        | `ak47.csv`     |
 |                   | M4A4         | `m4a4.csv`     |
 |                   | M4A1-S       | `m4a1.csv`     |
-|                   | Galil AR     | `galilar.csv`  |
+|                   | Galil AR     | `galil.csv`    |
 |                   | FAMAS        | `famas.csv`    |
 |                   | SG 553       | `sg553.csv`    |
 |                   | AUG          | `aug.csv`      |
@@ -221,6 +182,7 @@ Set this to match your in-game sensitivity setting for accurate compensation.
     "exit": "END",                      // Emergency exit
     "toggle_recoil": "INSERT",          // Toggle compensation on/off
     "toggle_weapon_detection": "HOME"   // Toggle automatic detection
+    // Other weapons activation keys...
 }
 ```
 
@@ -239,28 +201,6 @@ Each weapon includes customizable parameters:
 
 ---
 
-## 🔬 **Pattern System**
-
-### **CSV Format Structure**
-Each weapon pattern is stored as a CSV file with the format:
-```
-x_offset, y_offset, timing_ms
-0, 0, 30
-0.10497, -26.00426, 99
--2.49497, -29.9552, 99
-```
-
-### **Pattern Customization**
-1. Navigate to the `patterns/` directory
-2. Edit the appropriate weapon CSV file
-3. Modify compensation values as needed
-4. Reload the application to apply changes
-
-### **Pattern Visualization**
-The built-in visualization tab display the recoil pattern trajectory
-
----
-
 ## 🚨 **Troubleshooting**
 
 ### **Common Issues**
@@ -276,7 +216,7 @@ The built-in visualization tab display the recoil pattern trajectory
 - Restart application after configuration changes
 
 #### **TTS System Issues**
-- Verify Windows Speech Platform components (English Text To Speech)
+- Verify Windows Speech Platform components
 - Test TTS by toggling `tts_enabled` setting or via the UI
 
 #### **Sensitivity Calibration**

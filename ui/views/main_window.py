@@ -184,7 +184,7 @@ class MainWindow(QMainWindow):
         self.recoil_service.register_status_changed_callback(
             self._update_status)
 
-        self.logger.info("Main window initialized with restored GSI interface")
+        self.logger.debug("Main window initialized")
 
     def set_hotkey_service(self, hotkey_service):
         """Set hotkey service reference for hot reload capability."""
@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
         """Set GSI service references for comprehensive monitoring."""
         self.gsi_service = gsi_service
         self.weapon_detection_service = weapon_detection_service
-        self.logger.info("GSI services integrated for status monitoring")
+        self.logger.debug("GSI services integrated for status monitoring")
 
         # Immediate status refresh
         self._update_gsi_status()
@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
 
                 self.control_panel.start_button.setEnabled(False)
                 self.control_panel.stop_button.setEnabled(True)
-                self.logger.info(
+                self.logger.debug(
                     f"Compensation started for weapon: {weapon_name}")
             else:
                 QMessageBox.warning(
@@ -296,7 +296,7 @@ class MainWindow(QMainWindow):
             if success:
                 self.control_panel.start_button.setEnabled(True)
                 self.control_panel.stop_button.setEnabled(False)
-                self.logger.info("Compensation stopped")
+                self.logger.debug("Compensation stopped")
             else:
                 QMessageBox.warning(
                     self, "Warning", "Failed to stop compensation")
@@ -356,8 +356,8 @@ class MainWindow(QMainWindow):
             f"Selected weapon: {weapon_text}")
 
         # Control button state management
-        self.control_panel.start_button.setEnabled(not active)
-        self.control_panel.stop_button.setEnabled(active)
+        manual_activation_allowed = status.get('manual_activation_allowed', True)
+        self._update_manual_controls_state(manual_activation_allowed and not active, active)
 
     def _update_gsi_status(self):
         """Update GSI subsystem status with granular information."""
@@ -461,6 +461,40 @@ class MainWindow(QMainWindow):
             current_weapon = self.config_tab.get_selected_weapon()
             self.visualization_tab.update_weapon_visualization(current_weapon)
 
+    def _update_manual_controls_state(self, start_enabled: bool, stop_enabled: bool):
+        """Update the state of manual control buttons based on automatic detection status."""
+        try:
+            # Vérifier si la détection automatique est active
+            auto_detection_active = (
+                self.weapon_detection_service and
+                self.weapon_detection_service.enabled
+            )
+
+            if auto_detection_active:
+                # Désactiver les contrôles manuels si la détection automatique est active
+                self.control_panel.start_button.setEnabled(False)
+                self.control_panel.stop_button.setEnabled(False)
+
+                # Optionnel: changer le texte pour indiquer pourquoi c'est désactivé
+                self.control_panel.start_button.setToolTip(
+                    "Manual control disabled - Automatic weapon detection is active")
+                self.control_panel.stop_button.setToolTip(
+                    "Manual control disabled - Automatic weapon detection is active")
+            else:
+                # Contrôles normaux quand la détection automatique est désactivée
+                self.control_panel.start_button.setEnabled(start_enabled)
+                self.control_panel.stop_button.setEnabled(stop_enabled)
+
+                # Réactiver les contrôles de sélection d'arme
+                self.config_tab.set_weapon_controls_enabled(True)
+
+                # Remettre les tooltips normaux
+                self.control_panel.start_button.setToolTip("Start recoil compensation")
+                self.control_panel.stop_button.setToolTip("Stop recoil compensation")
+
+        except Exception as e:
+            self.logger.error(f"Manual controls state update error: {e}")
+
     def closeEvent(self, a0: Optional[QCloseEvent]):
         """Handle window close event with comprehensive cleanup."""
         try:
@@ -484,7 +518,7 @@ class MainWindow(QMainWindow):
                 self._update_status)
 
             self.logger.info(
-                "Main window closed with complete resource cleanup")
+                "Main window closed with resource cleanup")
 
             if a0:
                 a0.accept()

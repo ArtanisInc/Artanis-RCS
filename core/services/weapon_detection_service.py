@@ -80,7 +80,7 @@ class WeaponDetectionService:
             "last_activity": 0.0
         }
 
-        self.logger.info("Weapon detection service initialized")
+        self.logger.debug("Weapon detection service initialized")
 
     def enable(self) -> bool:
         """Enable automatic weapon detection."""
@@ -204,7 +204,8 @@ class WeaponDetectionService:
         try:
             if should_enable_rcs and not rcs_currently_active:
                 if self.detection_state.current_weapon:
-                    success = self.recoil_service.start_compensation()
+                    success = self.recoil_service.start_compensation(
+                        allow_manual_when_auto_enabled=True)
                     if success:
                         self.detection_state.rcs_was_auto_enabled = True
                         self.statistics["rcs_activations"] += 1
@@ -293,7 +294,7 @@ class WeaponDetectionService:
             self.announce_weapon_changes = config.get(
                 "announce_weapon_changes", self.announce_weapon_changes)
 
-            self.logger.info("Configuration updated")
+            self.logger.debug("Configuration updated")
             return True
 
         except Exception as e:

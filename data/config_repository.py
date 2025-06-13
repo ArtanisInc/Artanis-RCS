@@ -116,7 +116,7 @@ class CSVRepository:
                         "Parse error line %s in %s: %s", line_num, filename, e)
                     continue
 
-            self.logger.info(
+            self.logger.debug(
                 "Pattern loaded from %s: %s points", filename, len(pattern))
 
             # Debug logging for first few points

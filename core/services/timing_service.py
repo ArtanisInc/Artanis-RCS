@@ -36,7 +36,7 @@ class WindowsTimer:
         self.correction_factor = min(
             0.1, self.timing_overhead_ns / 1000000)  # Max 0.1ms
 
-        self.logger.info(
+        self.logger.debug(
             "Windows timer initialized (freq: %s Hz, overhead: %.0fns)",
             self.freq_value, self.timing_overhead_ns)
 
@@ -170,7 +170,7 @@ class TimingService:
         try:
             self.timer = WindowsTimer()
             self.precision_sleep = PrecisionSleep(self.timer)
-            self.logger.info(
+            self.logger.debug(
                 "Timing service initialized with %s strategy",
                 strategy.value)
         except Exception as e:

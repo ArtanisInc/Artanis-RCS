@@ -1,11 +1,8 @@
 """
-Text-to-speech service using Windows SAPI with thread-safe architecture.
+Text-to-speech service using Windows SAPI with simplified architecture.
 """
 import logging
-import threading
-import queue
-import time
-from typing import Optional, Dict, Any
+from typing import Optional
 from enum import Enum
 
 try:
@@ -14,48 +11,71 @@ try:
     SAPI_AVAILABLE = True
 except ImportError:
     SAPI_AVAILABLE = False
+    win32com = None
+    pythoncom = None
 
 
 class TTSPriority(Enum):
-    """TTS announcement priorities for queue management."""
+    """TTS announcement priorities (kept for compatibility)."""
     LOW = 1
     NORMAL = 2
     HIGH = 3
     CRITICAL = 4
 
 
-class SAPIManager:
-    """Manages SAPI voice instances and COM initialization."""
+class TTSService:
+    """Simplified text-to-speech service with direct SAPI calls and purge before speak."""
 
-    def __init__(self, voice_rate: int = 4, voice_volume: int = 65):
-        self.voice_rate = voice_rate
-        self.voice_volume = voice_volume
-        self.logger = logging.getLogger("SAPIManager")
+    def __init__(self, enabled: bool = True):
+        self.logger = logging.getLogger("TTSService")
+        self.enabled = enabled and SAPI_AVAILABLE
 
-    def create_voice_instance(self) -> Optional[Any]:
-        """Create and configure SAPI voice instance."""
+        # Voice configuration
+        self.voice_rate = 4
+        self.voice_volume = 65
+
+        # SAPI instance
+        self.voice = None
+
+        if self.enabled:
+            self._initialize_sapi()
+
+        self.logger.debug("TTS service initialized (enabled: %s)", self.enabled)
+
+    def _initialize_sapi(self) -> bool:
+        """Initialize SAPI instance."""
+        if not SAPI_AVAILABLE or not pythoncom or not win32com:
+            return False
+
         try:
-            # Initialize COM for current thread
+            # Initialize COM
             pythoncom.CoInitialize()
 
             # Create SAPI voice object
-            voice = win32com.client.Dispatch("SAPI.SpVoice")
-            voice.Rate = self.voice_rate
-            voice.Volume = self.voice_volume
+            self.voice = win32com.client.Dispatch("SAPI.SpVoice")
+            self.voice.Rate = self.voice_rate
+            self.voice.Volume = self.voice_volume
 
-            # Select French voice if available
-            self._select_preferred_voice(voice)
+            # Select preferred voice
+            self._select_preferred_voice()
 
-            return voice
+            # Test with silent speech
+            self.voice.Speak("", 3)  # Test with purge + async flag
+            self.logger.debug("SAPI initialized successfully")
+            return True
 
         except Exception as e:
-            self.logger.error("Failed to create SAPI voice instance: %s", e)
-            return None
+            self.logger.error("SAPI initialization failed: %s", e)
+            self.enabled = False
+            return False
 
-    def _select_preferred_voice(self, voice) -> None:
+    def _select_preferred_voice(self) -> None:
         """Select English voice if available, otherwise use default."""
+        if not self.voice:
+            return
+
         try:
-            voices = voice.GetVoices()
+            voices = self.voice.GetVoices()
 
             for i in range(voices.Count):
                 voice_item = voices.Item(i)
@@ -68,179 +88,22 @@ class SAPIManager:
                         "en-us",
                         "us",
                         "uk"]):
-                    voice.Voice = voice_item
-                    self.logger.info(
+                    self.voice.Voice = voice_item
+                    self.logger.debug(
                         "Selected English voice: %s",
                         voice_item.GetDescription())
                     return
 
             # Use default voice if no English voice found
-            default_voice = voice.Voice.GetDescription()
-            self.logger.info("Using default voice: %s", default_voice)
+            default_voice = self.voice.Voice.GetDescription()
+            self.logger.debug("Using default voice: %s", default_voice)
 
         except Exception as e:
             self.logger.warning("Voice selection failed: %s", e)
 
     @staticmethod
-    def cleanup_com() -> None:
-        """Clean up COM resources."""
-        try:
-            pythoncom.CoUninitialize()
-        except BaseException:
-            pass  # COM might not be initialized
-
-
-class TTSWorker:
-    """Worker thread for processing TTS announcements."""
-
-    def __init__(
-            self,
-            tts_queue: queue.PriorityQueue,
-            stop_event: threading.Event,
-            voice_rate: int,
-            voice_volume: int):
-        self.tts_queue = tts_queue
-        self.stop_event = stop_event
-        self.voice_rate = voice_rate
-        self.voice_volume = voice_volume
-        self.logger = logging.getLogger("TTSWorker")
-
-    def run(self) -> None:
-        """Main worker loop with COM-safe SAPI handling."""
-        self.logger.debug("TTS worker thread started")
-
-        # Initialize SAPI for this thread
-        sapi_manager = SAPIManager(self.voice_rate, self.voice_volume)
-        worker_voice = sapi_manager.create_voice_instance()
-
-        if not worker_voice:
-            self.logger.error("Failed to initialize SAPI in worker thread")
-            return
-
-        try:
-            while not self.stop_event.is_set():
-                try:
-                    # Get next announcement with timeout
-                    priority, message = self.tts_queue.get(timeout=1.0)
-
-                    self.logger.debug(
-                        "Processing TTS (priority %s): %s", priority, message)
-
-                    # Handle interruption for high priority messages
-                    if priority == 1:  # Critical priority
-                        worker_voice.Speak("", 2)  # Stop current speech
-                        self.logger.debug(
-                            "Speech interrupted for critical message")
-
-                    # Speak the message
-                    worker_voice.Speak(message, 0)  # Synchronous
-
-                    # Mark task as done
-                    self.tts_queue.task_done()
-
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    self.logger.error("TTS worker error: %s", e)
-
-                    # Attempt to recreate SAPI instance on error
-                    try:
-                        worker_voice = sapi_manager.create_voice_instance()
-                        if not worker_voice:
-                            self.logger.error(
-                                "Failed to recreate SAPI instance")
-                            break
-                    except Exception as recreation_error:
-                        self.logger.error(
-                            "SAPI recreation failed: %s", recreation_error)
-                        break
-
-        finally:
-            # Clean up resources
-            try:
-                if worker_voice:
-                    worker_voice.Speak("", 2)  # Stop any ongoing speech
-            except BaseException:
-                pass
-
-            SAPIManager.cleanup_com()
-            self.logger.debug("TTS worker thread terminated")
-
-
-class TTSService:
-    """Thread-safe text-to-speech service with queue management."""
-
-    def __init__(self, enabled: bool = True):
-        self.logger = logging.getLogger("TTSService")
-        self.enabled = enabled and SAPI_AVAILABLE
-
-        # Voice configuration
-        self.voice_rate = 4
-        self.voice_volume = 65
-
-        # Threading components
-        self.tts_queue = queue.PriorityQueue()
-        self.worker_thread: Optional[threading.Thread] = None
-        self.stop_event = threading.Event()
-        self.is_running = False
-
-        # Main thread SAPI instance (for immediate speech)
-        self.main_voice = None
-
-        if self.enabled:
-            self._initialize_main_sapi()
-            self._start_worker_thread()
-
-        self.logger.info("TTS service initialized (enabled: %s)", self.enabled)
-
-    def _initialize_main_sapi(self) -> bool:
-        """Initialize SAPI instance for main thread."""
-        try:
-            sapi_manager = SAPIManager(self.voice_rate, self.voice_volume)
-            self.main_voice = sapi_manager.create_voice_instance()
-
-            if self.main_voice:
-                # Test with silent speech
-                self.main_voice.Speak("", 2)
-                self.logger.debug("Main thread SAPI initialized successfully")
-                return True
-            else:
-                self.logger.error("Failed to initialize main thread SAPI")
-                return False
-
-        except Exception as e:
-            self.logger.error("Main SAPI initialization failed: %s", e)
-            self.enabled = False
-            return False
-
-    def _start_worker_thread(self) -> None:
-        """Start the worker thread for queue processing."""
-        if not self.enabled or self.is_running:
-            return
-
-        try:
-            self.stop_event.clear()
-            worker = TTSWorker(
-                self.tts_queue,
-                self.stop_event,
-                self.voice_rate,
-                self.voice_volume)
-
-            self.worker_thread = threading.Thread(
-                target=worker.run,
-                daemon=True,
-                name="TTSWorker"
-            )
-            self.worker_thread.start()
-            self.is_running = True
-
-            self.logger.debug("TTS worker thread started")
-
-        except Exception as e:
-            self.logger.error("Failed to start TTS worker thread: %s", e)
-
-    @staticmethod
     def normalize_weapon_pronunciation(text: str) -> str:
+        """Normalize weapon names for better pronunciation."""
         weapon_pronunciations = {
             'ak47': 'AK forty-seven',
             'ak-47': 'AK forty-seven',
@@ -269,112 +132,75 @@ class TTSService:
             self,
             message: str,
             priority: TTSPriority = TTSPriority.NORMAL) -> bool:
-        """Add message to TTS queue."""
-        if not self.enabled or not message.strip():
+        """Speak message with purge before speak enabled."""
+        if not self.enabled or not self.voice or not message.strip():
             return False
 
         try:
-            message = TTSService.normalize_weapon_pronunciation(message)
-            # Convert priority to queue value (lower number = higher priority)
-            priority_value = 5 - priority.value
-            self.tts_queue.put((priority_value, message.strip()))
+            message = self.normalize_weapon_pronunciation(message.strip())
 
-            self.logger.debug("Message queued for TTS: '%s'", message)
+            # Use flag 3 (purge + async) - stops current speech, speaks new message without blocking
+            self.voice.Speak(message, 3)
+
+            self.logger.debug("TTS spoke with purge: '%s'", message)
             return True
 
         except Exception as e:
-            self.logger.error("Failed to queue TTS message: %s", e)
+            self.logger.error("Failed to speak message: %s", e)
             return False
 
     def speak_interrupt_previous(
             self,
             message: str,
             priority: TTSPriority = TTSPriority.HIGH) -> bool:
-        """Interrupt current speech and speak new message immediately."""
-        if not self.enabled or not message.strip():
-            return False
-
-        try:
-            # Stop current speech in main thread
-            if self.main_voice:
-                try:
-                    self.main_voice.Speak("", 2)  # Stop and purge
-                except BaseException:
-                    pass
-
-            # Clear queue
-            self.clear_queue()
-            message = TTSService.normalize_weapon_pronunciation(message)
-
-            # Add message with critical priority
-            priority_value = 1  # Highest priority
-            self.tts_queue.put((priority_value, message.strip()))
-
-            self.logger.debug("Interrupting message added: '%s'", message)
-            return True
-
-        except Exception as e:
-            self.logger.error("Failed to interrupt TTS: %s", e)
-            return False
+        """Interrupt current speech and speak new message (same as speak with purge)."""
+        return self.speak(message, priority)
 
     def speak_immediate(self, message: str) -> bool:
-        if not self.enabled or not self.main_voice or not message.strip():
-            return False
-
-        try:
-            import threading
-            if threading.current_thread() != threading.main_thread():
-                self.logger.warning(
-                    "speak_immediate called from worker thread, redirecting to queue")
-                return self.speak(message, TTSPriority.HIGH)
-
-            message = TTSService.normalize_weapon_pronunciation(message)
-            self.logger.debug("Immediate TTS: %s", message)
-            self.main_voice.Speak(message.strip(), 1)  # Asynchronous
-            return True
-
-        except Exception as e:
-            self.logger.error("Immediate TTS failed: %s", e)
-            return self.speak(message, TTSPriority.HIGH)  # Fallback to queue
+        """Speak message immediately with purge before speak."""
+        return self.speak(message, TTSPriority.HIGH)
 
     def clear_queue(self) -> None:
-        """Clear all pending TTS messages."""
-        if not self.enabled:
+        """Clear any pending speech (stop current speech)."""
+        if not self.enabled or not self.voice:
             return
 
         try:
-            while not self.tts_queue.empty():
-                try:
-                    self.tts_queue.get_nowait()
-                    self.tts_queue.task_done()
-                except queue.Empty:
-                    break
-
-            self.logger.debug("TTS queue cleared")
-
+            self.voice.Speak("", 3)  # Purge any current speech (async)
+            self.logger.debug("Speech cleared")
         except Exception as e:
-            self.logger.error("Failed to clear TTS queue: %s", e)
+            self.logger.error("Failed to clear speech: %s", e)
 
     def set_voice_properties(
             self,
             rate: Optional[int] = None,
             volume: Optional[int] = None) -> bool:
         """Configure voice properties."""
-        if not self.enabled or not self.main_voice:
+        if not self.enabled or not self.voice:
             return False
 
         try:
             if rate is not None:
                 self.voice_rate = max(-10, min(10, rate))
-                self.main_voice.Rate = self.voice_rate
+                self.voice.Rate = self.voice_rate
 
             if volume is not None:
                 self.voice_volume = max(0, min(100, volume))
-                self.main_voice.Volume = self.voice_volume
+                self.voice.Volume = self.voice_volume
+
+            # Get voice name for logging
+            voice_name = "Unknown"
+            try:
+                voice_desc = self.voice.Voice.GetDescription()
+                # Extract short name (e.g., "Microsoft Zira Desktop" -> "Zira")
+                voice_parts = voice_desc.split()
+                voice_name = voice_parts[1] if len(voice_parts) > 1 else voice_desc
+            except Exception:
+                voice_name = "Default"
 
             self.logger.info(
-                "Voice properties updated (Rate: %s, Volume: %s)",
-                self.voice_rate, self.voice_volume)
+                "TTS initialized: %s voice, Rate: %s, Volume: %s",
+                voice_name, self.voice_rate, self.voice_volume)
             return True
 
         except Exception as e:
@@ -394,12 +220,10 @@ class TTSService:
             if enabled:
                 # Enable TTS
                 self.enabled = True
-                if not self.main_voice:
-                    if not self._initialize_main_sapi():
+                if not self.voice:
+                    if not self._initialize_sapi():
                         self.enabled = False
                         return False
-                if not self.is_running:
-                    self._start_worker_thread()
                 self.logger.info("TTS service enabled")
             else:
                 # Disable TTS
@@ -415,34 +239,23 @@ class TTSService:
 
     def stop(self) -> None:
         """Stop TTS service and clean up resources."""
-        if not self.is_running:
-            return
-
         try:
-            # Stop worker thread
-            self.stop_event.set()
-
-            if self.worker_thread and self.worker_thread.is_alive():
-                self.worker_thread.join(timeout=2.0)
-
-                if self.worker_thread.is_alive():
-                    self.logger.warning(
-                        "TTS worker thread did not terminate gracefully")
-
-            # Clean up main thread SAPI
-            if self.main_voice:
+            # Stop any ongoing speech
+            if self.voice:
                 try:
-                    self.main_voice.Speak("", 2)  # Stop any ongoing speech
+                    self.voice.Speak("", 3)  # Purge any current speech (async)
                 except Exception as stop_error:
-                    self.logger.warning(
-                        "Error stopping main SAPI: %s", stop_error)
+                    self.logger.warning("Error stopping SAPI: %s", stop_error)
                 finally:
-                    self.main_voice = None
+                    self.voice = None
 
-            # Clean up COM for main thread
-            SAPIManager.cleanup_com()
+            # Clean up COM
+            if SAPI_AVAILABLE and pythoncom:
+                try:
+                    pythoncom.CoUninitialize()
+                except Exception:
+                    pass  # COM might not be initialized
 
-            self.is_running = False
             self.logger.info("TTS service stopped")
 
         except Exception as e:

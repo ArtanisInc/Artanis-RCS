@@ -48,7 +48,7 @@ class RecoilService:
         self.status_changed_callbacks: List[Callable[[
             Dict[str, Any]], None]] = []
 
-        self.logger.info("Recoil service initialized with TTS")
+        self.logger.debug("Recoil service initialized")
 
     def set_weapon_detection_service(self, weapon_detection_service):
         """Set reference to weapon detection service for TTS coordination."""
@@ -87,13 +87,24 @@ class RecoilService:
 
     def start_compensation(
             self,
-            key_trigger: int = win32con.VK_LBUTTON) -> bool:
+            key_trigger: int = win32con.VK_LBUTTON,
+            allow_manual_when_auto_enabled: bool = False) -> bool:
         """Start compensation thread with conditional TTS announcement."""
         if self.active:
             self.logger.warning("Compensation already active")
+            return False
 
         if not self.current_weapon:
             self.logger.warning("No weapon selected")
+            return False
+
+        # Empêcher l'activation manuelle si la détection automatique est active
+        if not allow_manual_when_auto_enabled and self._is_manual_activation_blocked():
+            if self.tts_service:
+                self.tts_service.speak(
+                    "Manual activation blocked, automatic weapon detection active",
+                    TTSPriority.HIGH)
+            self.logger.info("Manual compensation start blocked: automatic weapon detection active")
             return False
 
         try:
@@ -160,6 +171,21 @@ class RecoilService:
                 self.tts_service.speak("Stop error", TTSPriority.CRITICAL)
             return False
 
+    def is_manual_activation_allowed(self) -> bool:
+        """Check if manual activation is currently allowed."""
+        return not self._is_manual_activation_blocked()
+
+    def _is_manual_activation_blocked(self) -> bool:
+        """Determine if manual activation should be blocked."""
+        # Bloquer l'activation manuelle si la détection automatique est active
+        if (self.weapon_detection_service and
+                self.weapon_detection_service.enabled):
+            self.logger.debug(
+                "Manual activation blocked: automatic weapon detection active")
+            return True
+
+        return False
+
     def _should_announce_weapon(self) -> bool:
         """Determine if weapon announcements should be made."""
         # No announcements if weapon detection service is active
@@ -187,7 +213,8 @@ class RecoilService:
         """Notify all observers of status change."""
         status = {
             'active': self.active,
-            'current_weapon': self.current_weapon
+            'current_weapon': self.current_weapon,
+            'manual_activation_allowed': self.is_manual_activation_allowed()
         }
 
         for callback in self.status_changed_callbacks:
@@ -203,9 +230,9 @@ class RecoilService:
         return False
 
     def _compensation_loop(self, key_trigger: int) -> None:
-        """Main compensation loop with dynamic weapon switching."""
-        self.logger.info(
-            "Starting compensation loop with dynamic weapon switching")
+        """Main compensation loop."""
+        self.logger.debug(
+            "Starting compensation loop")
 
         while not self.stop_event.is_set():
             try:
@@ -265,7 +292,7 @@ class RecoilService:
 
             self.timing_service.combined_sleep_2(1)
 
-        self.logger.info("Compensation loop terminated")
+        self.logger.debug("Compensation loop terminated")
 
     def _execute_compensation_sequence(
             self,

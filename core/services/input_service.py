@@ -161,7 +161,7 @@ class InputService:
         self._initialize_api()
         self._key_mappings = KeyMapping.get_all_mappings()
         self._last_key_states = {}
-        self.logger.info("Input service initialized")
+        self.logger.debug("Input service initialized")
 
     def _initialize_api(self) -> None:
         """Initialize Windows API functions."""

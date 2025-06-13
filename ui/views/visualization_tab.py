@@ -2,6 +2,7 @@
 Visualization tab for recoil pattern display with optimized external styles.
 """
 import logging
+import time
 from typing import List, Optional
 
 from PyQt5.QtWidgets import (
@@ -9,7 +10,7 @@ from PyQt5.QtWidgets import (
     QLabel, QCheckBox, QComboBox,
     QPushButton, QFileDialog, QMessageBox
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
@@ -100,6 +101,17 @@ class VisualizationTab(QWidget):
         self.logger = logging.getLogger("VisualizationTab")
         self.config_service = config_service
         self.current_weapon = None
+        
+        # Protection contre les mises à jour rapides
+        self._update_in_progress = False
+        self._pending_weapon = None
+        self._last_update_time = 0
+        self._debounce_delay = 0.1  # 100ms
+        
+        # Timer pour les mises à jour différées
+        self._update_timer = QTimer()
+        self._update_timer.setSingleShot(True)
+        self._update_timer.timeout.connect(self._process_pending_update)
 
         # Initialize components
         self.pattern_visualizer = PatternVisualizer(width=6, height=5, dpi=100)
@@ -109,7 +121,7 @@ class VisualizationTab(QWidget):
         self._setup_connections()
         self._apply_styles()
 
-        self.logger.info("Visualization tab initialized")
+        self.logger.debug("Visualization tab initialized")
 
     def _setup_ui(self):
         """Configure the user interface."""
@@ -152,9 +164,16 @@ class VisualizationTab(QWidget):
         # Export functionality
         self.controls.export_button.clicked.connect(self._export_figure)
 
+    def _process_pending_update(self):
+        """Traite les mises à jour en attente."""
+        if self._pending_weapon and not self._update_in_progress:
+            weapon_name = self._pending_weapon
+            self._pending_weapon = None
+            self._do_update_weapon_visualization(weapon_name)
+
     def update_weapon_visualization(self, weapon_name: str):
         """
-        Update visualization with specified weapon pattern.
+        Update visualization with specified weapon pattern with debouncing.
 
         Args:
             weapon_name: Name of weapon to visualize
@@ -163,6 +182,36 @@ class VisualizationTab(QWidget):
             self.logger.warning("No weapon name provided for visualization")
             return
 
+        # Skip if same weapon to avoid unnecessary updates
+        if self.current_weapon == weapon_name:
+            return
+
+        current_time = time.time()
+        
+        # Si une mise à jour est en cours, stocker la demande pour plus tard
+        if self._update_in_progress:
+            self._pending_weapon = weapon_name
+            return
+            
+        # Debouncing : si c'est trop rapide, différer la mise à jour
+        time_since_last = current_time - self._last_update_time
+        if time_since_last < self._debounce_delay:
+            self._pending_weapon = weapon_name
+            remaining_time = int((self._debounce_delay - time_since_last) * 1000)
+            self._update_timer.start(remaining_time)
+            return
+
+        # Effectuer la mise à jour immédiatement
+        self._do_update_weapon_visualization(weapon_name)
+
+    def _do_update_weapon_visualization(self, weapon_name: str):
+        """Effectue réellement la mise à jour de la visualisation."""
+        if self._update_in_progress:
+            return
+            
+        self._update_in_progress = True
+        self._last_update_time = time.time()
+        
         try:
             # Get weapon profile
             weapon = self.config_service.get_weapon_profile(weapon_name)
@@ -171,8 +220,13 @@ class VisualizationTab(QWidget):
                 self._clear_visualization()
                 return
 
-            # Update visualizer
-            self.pattern_visualizer.set_pattern(weapon.recoil_pattern)
+            # Update visualizer with safety check
+            if hasattr(weapon, 'recoil_pattern') and weapon.recoil_pattern:
+                self.pattern_visualizer.set_pattern(weapon.recoil_pattern)
+            else:
+                self.logger.warning("No recoil pattern for weapon: %s", weapon_name)
+                self._clear_visualization()
+                return
 
             # Store current weapon
             self.current_weapon = weapon_name
@@ -181,12 +235,26 @@ class VisualizationTab(QWidget):
 
         except Exception as e:
             self.logger.error("Visualization update failed: %s", e)
-            QMessageBox.warning(self, "Warning", f"Visualization error: {e}")
+            # Don't show popup for rapid switching errors - just log them
+            if "bbox" not in str(e):
+                QMessageBox.warning(self, "Warning", f"Visualization error: {e}")
+        finally:
+            self._update_in_progress = False
+            
+            # Traiter les mises à jour en attente s'il y en a
+            if self._pending_weapon:
+                remaining_weapon = self._pending_weapon
+                self._pending_weapon = None
+                # Programmer la prochaine mise à jour avec un petit délai
+                self._update_timer.start(50)  # 50ms de délai
 
     def _clear_visualization(self):
         """Clear the visualization display."""
-        self.pattern_visualizer.clear_pattern()
-        self.current_weapon = None
+        try:
+            self.pattern_visualizer.clear_pattern()
+            self.current_weapon = None
+        except Exception as e:
+            self.logger.error("Failed to clear visualization: %s", e)
 
     def _on_style_changed(self, index):
         """
@@ -198,16 +266,19 @@ class VisualizationTab(QWidget):
         if index < 0:
             return
 
-        # Get selected colors
-        colors = self.controls.style_combo.currentData()
-        if not colors or len(colors) < 2:
-            return
+        try:
+            # Get selected colors
+            colors = self.controls.style_combo.currentData()
+            if not colors or len(colors) < 2:
+                return
 
-        # Update visualizer colors
-        self.pattern_visualizer.set_colors(
-            point_color=colors[1],
-            line_color=colors[0]
-        )
+            # Update visualizer colors
+            self.pattern_visualizer.set_colors(
+                point_color=colors[1],
+                line_color=colors[0]
+            )
+        except Exception as e:
+            self.logger.error("Failed to change style: %s", e)
 
     def _export_figure(self):
         """Export the visualization figure to file."""
