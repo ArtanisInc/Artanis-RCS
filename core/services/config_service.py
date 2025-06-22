@@ -53,13 +53,8 @@ class ConfigurationValidator:
     @staticmethod
     def validate_features_data(features_data: Dict[str, Any]) -> bool:
         """Validate features configuration."""
-        valid_input_types = ["sendinput", "arduino"]
 
         try:
-            # Validate input type if present
-            if "input_souris" in features_data:
-                if features_data["input_souris"] not in valid_input_types:
-                    return False
 
             # Validate boolean features
             bool_features = ["tts_enabled", "overlay"]
@@ -256,8 +251,7 @@ class ConfigService:
 
         # Apply defaults for missing values
         defaults = {
-            "tts_enabled": True,
-            "input_souris": "sendinput"
+            "tts_enabled": True
         }
 
         for key, default_value in defaults.items():
@@ -271,8 +265,7 @@ class ConfigService:
         self.config = {
             "game_sensitivity": 1.0,
             "features": {
-                "tts_enabled": True,
-                "input_souris": "sendinput"
+                "tts_enabled": True
             },
             "hotkeys": {},
             "weapons": []
@@ -367,26 +360,6 @@ class ConfigService:
             return self.save_config()
         except Exception as e:
             self.logger.error("Failed to save hotkeys: %s", e)
-            return False
-
-    def get_input_type(self) -> str:
-        """Get configured mouse input type."""
-        return self.config.get("features", {}).get("input_souris", "sendinput")
-
-    def set_input_type(self, input_type: str) -> bool:
-        """Set mouse input type."""
-        valid_types = ["sendinput", "arduino"]
-        if input_type not in valid_types:
-            raise ValueError(f"Invalid input type: {input_type}")
-
-        try:
-            if "features" not in self.config:
-                self.config["features"] = {}
-
-            self.config["features"]["input_souris"] = input_type
-            return self.save_config()
-        except Exception as e:
-            self.logger.error("Failed to set input type: %s", e)
             return False
 
     def get_weapon_hotkeys(self) -> Dict[str, str]:

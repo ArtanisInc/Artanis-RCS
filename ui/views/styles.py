@@ -307,17 +307,6 @@ QComboBox[objectName="key_hotkey_combo"]:focus {{
     border: 2px solid {ColorPalette.WARNING_DARK};
 }}
 
-QComboBox[objectName="input_souris_combo"] {{
-    border: 2px solid {ColorPalette.ACCENT};
-    border-radius: {BorderRadius.MD};
-    padding: {Spacing.SM} {Spacing.LG};
-    background-color: #fdf7ff;
-}}
-
-QComboBox[objectName="input_souris_combo"]:focus {{
-    border: 2px solid {ColorPalette.ACCENT_DARK};
-}}
-
 {ComponentStyles.checkbox()}
 
 /* Scrollbars */

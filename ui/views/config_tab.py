@@ -2,7 +2,7 @@
 Configuration tab for the user interface.
 """
 import logging
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Tuple, List
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -166,34 +166,14 @@ class FeaturesSection(ConfigSection):
         self.audio_feature.setChecked(True)
         self.audio_feature.setFont(QFont("Arial", 10))
 
-        # Mouse input selection
-        input_label = self.create_styled_label("Mouse Input (wip):")
-        self.input_souris_combo = QComboBox()
-        self._configure_input_combo()
-
         # Save button
         self.save_features_button = self.create_styled_button("Save", 120)
 
         # Layout arrangement
         layout.addWidget(self.audio_feature, 0, 0)
-        layout.addWidget(input_label, 0, 1)
-        layout.addWidget(self.input_souris_combo, 0, 2)
-        layout.addWidget(self.save_features_button, 0, 3)
-        layout.setColumnStretch(4, 1)
+        layout.addWidget(self.save_features_button, 0, 1)
+        layout.setColumnStretch(2, 1)
 
-    def _configure_input_combo(self):
-        """Configure input selection combo box."""
-        self.input_souris_combo.setMaximumHeight(28)
-        self.input_souris_combo.setMaximumWidth(120)
-        self.input_souris_combo.setFont(QFont("Arial", 10))
-
-        input_options = [
-            ("SendInput", "sendinput"),
-            ("Arduino", "arduino")
-        ]
-
-        for display_name, value in input_options:
-            self.input_souris_combo.addItem(display_name, value)
 
 
 class HotkeysSection(ConfigSection):
@@ -406,7 +386,7 @@ class ConfigTab(QWidget):
         self.hotkeys_section.weapon_hotkey_combo.addItem(
             "Select a weapon...", "")
 
-        for name, profile in self.config_service.weapon_profiles.items():
+        for name in self.config_service.weapon_profiles.keys():
             display_name = self.config_service.get_weapon_display_name(name)
             self.global_weapon_section.weapon_combo.addItem(display_name, name)
             self.hotkeys_section.weapon_hotkey_combo.addItem(
@@ -430,11 +410,6 @@ class ConfigTab(QWidget):
 
         self.features_section.audio_feature.setChecked(
             features.get("tts_enabled", True))
-
-        input_type = features.get("input_souris", "sendinput")
-        index = self.features_section.input_souris_combo.findData(input_type)
-        if index >= 0:
-            self.features_section.input_souris_combo.setCurrentIndex(index)
 
     def _load_hotkeys(self):
         """Load hotkeys configuration."""
@@ -670,8 +645,7 @@ class ConfigTab(QWidget):
         """Save features configuration."""
         try:
             features_settings = {
-                "tts_enabled": self.features_section.audio_feature.isChecked(),
-                "input_souris": self.features_section.input_souris_combo.currentData()}
+                "tts_enabled": self.features_section.audio_feature.isChecked()}
 
             self.config_service.config["features"] = features_settings
             success = self.config_service.save_config()

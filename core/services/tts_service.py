@@ -3,7 +3,6 @@ Text-to-speech service using Windows SAPI with simplified architecture.
 """
 import logging
 from typing import Optional
-from enum import Enum
 
 try:
     import win32com.client
@@ -13,14 +12,6 @@ except ImportError:
     SAPI_AVAILABLE = False
     win32com = None
     pythoncom = None
-
-
-class TTSPriority(Enum):
-    """TTS announcement priorities (kept for compatibility)."""
-    LOW = 1
-    NORMAL = 2
-    HIGH = 3
-    CRITICAL = 4
 
 
 class TTSService:
@@ -128,10 +119,7 @@ class TTSService:
             text = text.replace(key, value).replace(key.upper(), value)
         return text
 
-    def speak(
-            self,
-            message: str,
-            priority: TTSPriority = TTSPriority.NORMAL) -> bool:
+    def speak(self, message: str) -> bool:
         """Speak message with purge before speak enabled."""
         if not self.enabled or not self.voice or not message.strip():
             return False
@@ -149,16 +137,13 @@ class TTSService:
             self.logger.error("Failed to speak message: %s", e)
             return False
 
-    def speak_interrupt_previous(
-            self,
-            message: str,
-            priority: TTSPriority = TTSPriority.HIGH) -> bool:
+    def speak_interrupt_previous(self, message: str) -> bool:
         """Interrupt current speech and speak new message (same as speak with purge)."""
-        return self.speak(message, priority)
+        return self.speak(message)
 
     def speak_immediate(self, message: str) -> bool:
         """Speak message immediately with purge before speak."""
-        return self.speak(message, TTSPriority.HIGH)
+        return self.speak(message)
 
     def clear_queue(self) -> None:
         """Clear any pending speech (stop current speech)."""

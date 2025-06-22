@@ -3,6 +3,7 @@ Game State Integration service for Counter-Strike 2.
 """
 import json
 import logging
+import re
 import threading
 import time
 import winreg
@@ -80,15 +81,17 @@ class GSIConfigService:
             return None
 
     def _get_steam_paths(self) -> list[Path]:
-        """Get Steam installation paths."""
+        """Get Steam installation paths including custom library folders."""
         steam_paths = []
+        main_steam_path = None
 
-        # Try registry paths
+        # Try registry paths for main Steam installation
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                               r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
                 install_path = winreg.QueryValueEx(key, "InstallPath")[0]
-                steam_paths.append(Path(install_path))
+                main_steam_path = Path(install_path)
+                steam_paths.append(main_steam_path)
         except (WindowsError, FileNotFoundError):
             pass
 
@@ -96,22 +99,54 @@ class GSIConfigService:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
                               r"SOFTWARE\Valve\Steam") as key:
                 install_path = winreg.QueryValueEx(key, "SteamPath")[0]
-                steam_paths.append(Path(install_path))
+                main_steam_path = Path(install_path)
+                steam_paths.append(main_steam_path)
         except (WindowsError, FileNotFoundError):
             pass
 
-        # Add common paths
-        common_paths = [
-            Path("C:/Program Files (x86)/Steam"),
-            Path("C:/Program Files/Steam"),
-            Path.home() / "Steam"
-        ]
+        # Parse libraryfolders.vdf to find additional Steam library locations
+        if main_steam_path:
+            library_paths = self._parse_libraryfolders_vdf(main_steam_path)
+            for lib_path in library_paths:
+                if lib_path not in steam_paths:
+                    steam_paths.append(lib_path)
 
-        for path in common_paths:
-            if path not in steam_paths:
-                steam_paths.append(path)
-
+        self.logger.debug("Found Steam paths: %s", [str(p) for p in steam_paths])
         return steam_paths
+
+    def _parse_libraryfolders_vdf(self, steam_path: Path) -> list[Path]:
+        """Parse Steam's libraryfolders.vdf to find all library locations."""
+        library_paths = []
+
+        try:
+            vdf_path = steam_path / "config" / "libraryfolders.vdf"
+
+            if not vdf_path.exists():
+                self.logger.debug("libraryfolders.vdf not found at %s", vdf_path)
+                return library_paths
+
+            with open(vdf_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+
+            # Parse VDF content using regex to find "path" entries
+            # VDF format: "path"    "C:\\path\\to\\library"
+            path_pattern = r'"path"\s+"([^"]+)"'
+            matches = re.findall(path_pattern, content, re.IGNORECASE)
+
+            for match in matches:
+                # Convert escaped backslashes and normalize path
+                library_path = Path(match.replace('\\\\', '\\'))
+
+                if library_path.exists():
+                    library_paths.append(library_path)
+                    self.logger.debug("Found Steam library: %s", library_path)
+                else:
+                    self.logger.debug("Steam library path does not exist: %s", library_path)
+
+        except Exception as e:
+            self.logger.warning("Error parsing libraryfolders.vdf: %s", e)
+
+        return library_paths
 
     def _generate_config_content(self, gsi_config: Dict[str, Any]) -> str:
         """Generate the GSI configuration file content."""
@@ -397,15 +432,3 @@ class GSIService:
             "registered_callbacks": len(self.update_callbacks),
             "current_state_available": self.current_player_state is not None
         }
-
-    def generate_config_file(self, gsi_config: Dict[str, Any]) -> bool:
-        """
-        Manually generate GSI configuration file.
-
-        Args:
-            gsi_config: GSI configuration from main config
-
-        Returns:
-            bool: True if file exists or was created successfully
-        """
-        return self.config_service.generate_config_file(gsi_config)

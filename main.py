@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import QTimer
 
 from core.services.hotkey_service import HotkeyService, HotkeyAction
-from core.services.tts_service import TTSService, TTSPriority
+from core.services.tts_service import TTSService
 from core.services.gsi_service import GSIService
 from core.services.weapon_detection_service import WeaponDetectionService
 
@@ -158,7 +158,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
             if recoil_service.active:
                 success = recoil_service.stop_compensation()
                 if not success:
-                    tts_service.speak("Stop error", TTSPriority.CRITICAL)
+                    tts_service.speak("Stop error")
             else:
                 current_weapon = recoil_service.current_weapon
 
@@ -170,7 +170,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                         "No weapon available for hotkey start (GSI or manual)")
                     # Always announce critical errors regardless of detection
                     # mode
-                    tts_service.speak("No weapon available", TTSPriority.HIGH)
+                    tts_service.speak("No weapon available")
                     return
 
                 if recoil_service.current_weapon != current_weapon:
@@ -183,14 +183,14 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                     weapon_detection_service.set_user_initiated_start(True)
 
                 if not success:
-                    tts_service.speak("Start error", TTSPriority.CRITICAL)
+                    tts_service.speak("Start error")
 
             action_text = "started" if recoil_service.active else "stopped"
             logger.debug("Compensation %s via hotkey", action_text)
 
         except Exception as e:
             logger.error("Toggle compensation error: %s", e)
-            tts_service.speak("System error", TTSPriority.CRITICAL)
+            tts_service.speak("System error")
 
     def toggle_weapon_detection_action():
         """Toggle weapon detection GSI feature."""
@@ -206,22 +206,21 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                 logger.debug("Weapon detection %s via hotkey", status_text)
 
                 if success:
-                    tts_service.speak(f"Weapon detection {status_text}",
-                                      TTSPriority.HIGH)
+                    tts_service.speak(f"Weapon detection {status_text}")
                 else:
-                    tts_service.speak("Detection error", TTSPriority.CRITICAL)
+                    tts_service.speak("Detection error")
             else:
                 logger.warning("Weapon detection service not available")
-                tts_service.speak("Detection unavailable", TTSPriority.HIGH)
+                tts_service.speak("Detection unavailable")
 
         except Exception as e:
             logger.error("Toggle weapon detection error: %s", e)
-            tts_service.speak("Detection error", TTSPriority.CRITICAL)
+            tts_service.speak("Detection error")
 
     def exit_action():
         """Exit application."""
         logger.debug("Closing application via hotkey")
-        tts_service.speak("Closing script", TTSPriority.HIGH)
+        tts_service.speak("Closing script")
         time.sleep(1.5)
         main_window.close()
 
@@ -249,17 +248,16 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                                       .get_weapon_display_name(weapon_name))
                     clean_name = weapon_display.replace(
                         "-", " ").replace("_", " ")
-                    tts_service.speak_interrupt_previous(clean_name,
-                                                         TTSPriority.HIGH)
+                    tts_service.speak_interrupt_previous(clean_name)
 
                 logger.debug("Weapon selected via hotkey: %s", weapon_name)
             else:
                 logger.warning("Weapon not found in UI: %s", weapon_name)
-                tts_service.speak("Weapon not found", TTSPriority.HIGH)
+                tts_service.speak("Weapon not found")
 
         except Exception as e:
             logger.error("Weapon selection error: %s", e)
-            tts_service.speak("Selection error", TTSPriority.HIGH)
+            tts_service.speak("Selection error")
 
     try:
         hotkey_service.register_action_callback(HotkeyAction.TOGGLE_RECOIL,
@@ -329,10 +327,9 @@ def main():
 
         logger.info("=== RCS System Started ===")
         if gsi_service:
-            tts_service.speak("RCS system with weapon detection ready",
-                              TTSPriority.HIGH)
+            tts_service.speak("RCS system with weapon detection ready")
         else:
-            tts_service.speak("RCS system ready", TTSPriority.HIGH)
+            tts_service.speak("RCS system ready")
 
         sys.exit(app.exec_())
 

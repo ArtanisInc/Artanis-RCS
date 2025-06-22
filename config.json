@@ -1,8 +1,7 @@
 {
     "game_sensitivity": 1.08,
     "features": {
-        "tts_enabled": true,
-        "input_souris": "sendinput"
+        "tts_enabled": true
     },
     "gsi": {
         "enabled": true,

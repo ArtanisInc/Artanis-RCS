@@ -3,14 +3,14 @@ Visualization tab for recoil pattern display with optimized external styles.
 """
 import logging
 import time
-from typing import List, Optional
+from typing import List
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QCheckBox, QComboBox,
     QPushButton, QFileDialog, QMessageBox
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import QTimer
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
@@ -101,13 +101,13 @@ class VisualizationTab(QWidget):
         self.logger = logging.getLogger("VisualizationTab")
         self.config_service = config_service
         self.current_weapon = None
-        
+
         # Protection contre les mises à jour rapides
         self._update_in_progress = False
         self._pending_weapon = None
         self._last_update_time = 0
         self._debounce_delay = 0.1  # 100ms
-        
+
         # Timer pour les mises à jour différées
         self._update_timer = QTimer()
         self._update_timer.setSingleShot(True)
@@ -187,12 +187,12 @@ class VisualizationTab(QWidget):
             return
 
         current_time = time.time()
-        
+
         # Si une mise à jour est en cours, stocker la demande pour plus tard
         if self._update_in_progress:
             self._pending_weapon = weapon_name
             return
-            
+
         # Debouncing : si c'est trop rapide, différer la mise à jour
         time_since_last = current_time - self._last_update_time
         if time_since_last < self._debounce_delay:
@@ -208,10 +208,10 @@ class VisualizationTab(QWidget):
         """Effectue réellement la mise à jour de la visualisation."""
         if self._update_in_progress:
             return
-            
+
         self._update_in_progress = True
         self._last_update_time = time.time()
-        
+
         try:
             # Get weapon profile
             weapon = self.config_service.get_weapon_profile(weapon_name)
@@ -240,10 +240,9 @@ class VisualizationTab(QWidget):
                 QMessageBox.warning(self, "Warning", f"Visualization error: {e}")
         finally:
             self._update_in_progress = False
-            
+
             # Traiter les mises à jour en attente s'il y en a
             if self._pending_weapon:
-                remaining_weapon = self._pending_weapon
                 self._pending_weapon = None
                 # Programmer la prochaine mise à jour avec un petit délai
                 self._update_timer.start(50)  # 50ms de délai
