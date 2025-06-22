@@ -57,7 +57,7 @@ class ConfigurationValidator:
         try:
 
             # Validate boolean features
-            bool_features = ["tts_enabled", "overlay"]
+            bool_features = ["tts_enabled"]
             for feature in bool_features:
                 if feature in features_data:
                     if not isinstance(features_data[feature], bool):
