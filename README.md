@@ -3,7 +3,7 @@
 <p align="center"><strong>Advanced recoil compensation system for Counter-Strike 2 with automatic weapon detection</strong></p>
 
 <p align="center">
-  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.8+-blue.svg" /></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" /></a>
   <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows-lightgrey.svg" /></a>
   <a href="#license--disclaimer"><img src="https://img.shields.io/badge/license-Educational%20Use-orange.svg" /></a>
 </p>
