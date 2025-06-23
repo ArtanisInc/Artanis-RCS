@@ -267,12 +267,6 @@ This project is released under the MIT License with the following additional ter
 
 **EDUCATIONAL USE ONLY**: This software is intended solely for educational and research purposes. Any use in violation of game Terms of Service is strictly prohibited and not endorsed by the developers.
 
-### **Third-Party Acknowledgments**
-- **PyQt5**: GUI framework by Riverbank Computing
-- **matplotlib**: Plotting library by the Matplotlib Development Team
-- **numpy**: Numerical computing library by NumPy Developers
-- **pywin32**: Windows API access by Mark Hammond
-
 ### **Pattern and Algorithms Data Sources**
 - Recoil patterns derived from CS2 chinese community.
 - Algorithms derived from this project [ NewTennng / csgoPress-the-gun](https://github.com/NewTennng/csgoPress-the-gun/tree/main)
