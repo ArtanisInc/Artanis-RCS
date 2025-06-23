@@ -70,8 +70,7 @@ artanis-rcs/
 │   ├── m4a1.csv                     # M4A1-S spray pattern
 │   └── [13 additional weapon patterns]
 └── data/                            # Data repositories and persistence
-    ├── config_repository.py         # Configuration file management
-    └── csv_repository.py            # Pattern data loading and parsing
+    └── config_repository.py         # Configuration file management and pattern data loading and parsing
 ```
 
 ---
@@ -80,7 +79,7 @@ artanis-rcs/
 
 ### **System Requirements**
 - **Operating System**: Windows 10/11 (required for pywin32)
-- **Python**: Version 3.8 or higher
+- **Python**: Version 3.9 or higher
 - **Counter-Strike 2**: Latest version with GSI capability
 
 ### **Dependencies**
@@ -154,8 +153,7 @@ Set this to match your in-game sensitivity setting for accurate compensation.
 #### **Feature Toggles**
 ```json
 "features": {
-    "tts_enabled": true,          // Enable/disable audio feedback
-    "input_souris": "sendinput"   // Input method (SendInput API)
+    "tts_enabled": true          // Enable/disable audio feedback
 }
 ```
 
