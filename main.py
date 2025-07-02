@@ -13,12 +13,13 @@ from core.services.hotkey_service import HotkeyService, HotkeyAction
 from core.services.tts_service import TTSService
 from core.services.gsi_service import GSIService
 from core.services.weapon_detection_service import WeaponDetectionService
+from core.services.bomb_timer_service import BombTimerService
 
 
 def setup_logging() -> logging.Logger:
     """Configure logging system."""
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.INFO,  # Restored to INFO
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler('recoil_system.log'),
@@ -81,19 +82,23 @@ def initialize_system() -> Tuple:
         if gsi_config.get("enabled", True):
             weapon_detection_service.configure(gsi_config)
 
+        # Initialize bomb timer service
+        bomb_timer_service = BombTimerService(config_service)
+
         # Log grouped services summary
         services_summary = [
             "Input",
             "Timing (10MHz/1ns)",
             "Recoil",
             "Weapon Detection",
+            "Bomb Timer",
             f"Hotkeys ({len(hotkey_service.hotkey_mappings)} active)"
         ]
         logger.info("Core services initialized: %s", ", ".join(services_summary))
 
         logger.info("System initialized successfully")
         return (config_service, input_service, recoil_service, hotkey_service,
-                tts_service, gsi_service, weapon_detection_service)
+                tts_service, gsi_service, weapon_detection_service, bomb_timer_service)
 
     except Exception as e:
         logger.critical("System initialization failed: %s", e, exc_info=True)
@@ -101,7 +106,8 @@ def initialize_system() -> Tuple:
 
 
 def setup_gsi_integration(gsi_service: GSIService,
-                          weapon_detection_service: WeaponDetectionService
+                          weapon_detection_service: WeaponDetectionService,
+                          bomb_timer_service
                           ) -> bool:
     """Setup GSI integration and start services."""
     logger = logging.getLogger("GSIIntegration")
@@ -110,6 +116,10 @@ def setup_gsi_integration(gsi_service: GSIService,
         gsi_service.register_callback(
             "weapon_detection",
             weapon_detection_service.process_player_state)
+
+        gsi_service.register_callback(
+            "bomb_timer",
+            bomb_timer_service.process_player_state)
 
         if not gsi_service.start_server():
             logger.error("Failed to start GSI server")
@@ -128,7 +138,7 @@ def setup_gsi_integration(gsi_service: GSIService,
 
 
 def create_gui(config_service, recoil_service, hotkey_service, tts_service,
-               gsi_service=None, weapon_detection_service=None):
+               gsi_service=None, weapon_detection_service=None, bomb_timer_service=None):
     """Create main GUI window."""
     from ui.views.main_window import MainWindow
 
@@ -142,6 +152,9 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
 
         if gsi_service and weapon_detection_service:
             window.set_gsi_services(gsi_service, weapon_detection_service)
+
+        if bomb_timer_service:
+            window.set_bomb_timer_service(bomb_timer_service)
 
         setup_hotkey_callbacks(window, recoil_service, hotkey_service,
                                tts_service, weapon_detection_service)
@@ -290,12 +303,12 @@ def main():
 
         (config_service, input_service, recoil_service, hotkey_service,
          tts_service, gsi_service,
-         weapon_detection_service) = initialize_system()
+         weapon_detection_service, bomb_timer_service) = initialize_system()
 
         gsi_enabled = config_service.config.get("gsi", {}).get("enabled", True)
         if gsi_enabled:
             if not setup_gsi_integration(
-                    gsi_service, weapon_detection_service):
+                    gsi_service, weapon_detection_service, bomb_timer_service):
                 logger.warning("GSI integration failed, continuing without it")
                 gsi_service = None
                 weapon_detection_service = None
@@ -305,7 +318,7 @@ def main():
             weapon_detection_service = None
 
         window = create_gui(config_service, recoil_service, hotkey_service,
-                            tts_service, gsi_service, weapon_detection_service)
+                            tts_service, gsi_service, weapon_detection_service, bomb_timer_service)
         window.show()
 
         timer = QTimer()
@@ -323,6 +336,8 @@ def main():
                     weapon_detection_service.disable()
                 if gsi_service:
                     gsi_service.stop_server()
+                if bomb_timer_service:
+                    bomb_timer_service.stop()
                 tts_service.stop()
             except Exception as e:
                 logger.error("Cleanup error: %s", e)

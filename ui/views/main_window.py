@@ -17,6 +17,7 @@ from core.services.config_service import ConfigService
 from ui.views.config_tab import ConfigTab
 from ui.views.visualization_tab import VisualizationTab
 from ui.views.styles import MAIN_WINDOW_STYLES
+from ui.widgets.bomb_timer_overlay import BombTimerOverlay
 
 
 class ControlPanel:
@@ -167,9 +168,13 @@ class MainWindow(QMainWindow):
         self.hotkey_service = None
         self.gsi_service = None
         self.weapon_detection_service = None
+        self.bomb_timer_service = None
 
         # UI components
         self.control_panel = ControlPanel()
+
+        # Bomb timer overlay
+        self.bomb_timer_overlay = BombTimerOverlay()
 
         # Periodic GSI status update timer
         self.status_timer = QTimer()
@@ -202,6 +207,17 @@ class MainWindow(QMainWindow):
 
         # Update UI to reflect initial weapon detection state
         self._sync_initial_ui_state()
+
+    def set_bomb_timer_service(self, bomb_timer_service):
+        """Set bomb timer service and connect overlay."""
+        self.bomb_timer_service = bomb_timer_service
+
+        # Connect bomb timer service to overlay
+        bomb_timer_service.set_timer_update_callback(
+            self.bomb_timer_overlay.update_bomb_state
+        )
+
+        self.logger.debug("Bomb timer service connected to overlay")
 
     def _sync_initial_ui_state(self):
         """Synchronize UI with initial service states after full initialization."""
@@ -557,6 +573,13 @@ class MainWindow(QMainWindow):
 
             if self.gsi_service and self.gsi_service.is_running:
                 self.gsi_service.stop_server()
+
+            # Bomb timer cleanup
+            if self.bomb_timer_service:
+                self.bomb_timer_service.stop()
+
+            if hasattr(self, 'bomb_timer_overlay'):
+                self.bomb_timer_overlay.close()
 
             # Unregister callbacks
             self.recoil_service.unregister_status_changed_callback(

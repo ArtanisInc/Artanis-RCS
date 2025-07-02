@@ -57,7 +57,7 @@ class ConfigurationValidator:
         try:
 
             # Validate boolean features
-            bool_features = ["tts_enabled"]
+            bool_features = ["tts_enabled", "bomb_timer_enabled"]
             for feature in bool_features:
                 if feature in features_data:
                     if not isinstance(features_data[feature], bool):
@@ -251,7 +251,8 @@ class ConfigService:
 
         # Apply defaults for missing values
         defaults = {
-            "tts_enabled": True
+            "tts_enabled": True,
+            "bomb_timer_enabled": True
         }
 
         for key, default_value in defaults.items():
@@ -265,7 +266,8 @@ class ConfigService:
         self.config = {
             "game_sensitivity": 1.0,
             "features": {
-                "tts_enabled": True
+                "tts_enabled": True,
+                "bomb_timer_enabled": True
             },
             "hotkeys": {},
             "weapons": []

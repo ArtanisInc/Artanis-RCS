@@ -134,6 +134,8 @@ class PlayerState:
     weapons: Dict[str, WeaponState]
     active_weapon: Optional[WeaponState]
     timestamp: float
+    has_defuse_kit: bool = False
+    bomb_planted: bool = False
 
     def __post_init__(self):
         """Clamp values to valid ranges."""

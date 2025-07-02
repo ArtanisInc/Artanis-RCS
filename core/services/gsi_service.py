@@ -176,8 +176,8 @@ class GSIConfigService:
         "allplayers_match_stats"   "0"      // Other players stats (not needed)
         "allplayers_position"      "0"      // Other players position (not needed)
         "allgrenades"              "0"      // Grenade information (not needed)
-        "bomb"                     "0"      // Bomb information (not needed)
-        "phase_countdowns"         "0"      // Phase countdowns (not needed)
+        "bomb"                     "1"      // Bomb information (NEEDED for timer)
+        "phase_countdowns"         "1"      // Phase countdowns (NEEDED for timer)
         "player_position"          "0"      // Player position (not needed)
     }}
 }}'''
@@ -359,6 +359,20 @@ class GSIService:
             state = player_data.get("state", {})
             weapons_data = player_data.get("weapons", {})
 
+            # Extract bomb state
+            # Based on ErScripts: bomb state is in round.bomb, not bomb.state
+            round_data = gsi_data.get("round", {})
+            bomb_planted = round_data.get("bomb", "") == "planted"
+
+            # Debug bomb data
+            if round_data:
+                self.logger.debug(f"Round data received: {round_data}")
+
+            # Check for defuse kit in player weapons
+            # Based on ErScripts: defuse kit is in player.state.defusekit
+            state = player_data.get("state", {})
+            has_defuse_kit = "defusekit" in state
+
             weapons = self._extract_weapons(weapons_data)
 
             active_weapon = None
@@ -375,7 +389,9 @@ class GSIService:
                 burning=state.get("burning", 0),
                 weapons=weapons,
                 active_weapon=active_weapon,
-                timestamp=time.time()
+                timestamp=time.time(),
+                has_defuse_kit=has_defuse_kit,
+                bomb_planted=bomb_planted
             )
 
         except Exception as e:

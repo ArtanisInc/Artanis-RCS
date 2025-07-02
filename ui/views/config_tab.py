@@ -153,7 +153,7 @@ class FeaturesSection(ConfigSection):
 
     def __init__(self):
         self.section = QGroupBox("Features")
-        self.section.setMaximumHeight(80)
+        self.section.setMaximumHeight(110)  # Increased height for bomb timer
         self._setup_ui()
 
     def _setup_ui(self):
@@ -166,12 +166,18 @@ class FeaturesSection(ConfigSection):
         self.audio_feature.setChecked(True)
         self.audio_feature.setFont(QFont("Arial", 10))
 
+        # Bomb timer feature checkbox
+        self.bomb_timer_feature = QCheckBox("Bomb Timer Overlay")
+        self.bomb_timer_feature.setChecked(True)
+        self.bomb_timer_feature.setFont(QFont("Arial", 10))
+
         # Save button
         self.save_features_button = self.create_styled_button("Save", 120)
 
         # Layout arrangement
         layout.addWidget(self.audio_feature, 0, 0)
-        layout.addWidget(self.save_features_button, 0, 1)
+        layout.addWidget(self.bomb_timer_feature, 1, 0)
+        layout.addWidget(self.save_features_button, 0, 1, 2, 1)  # Span 2 rows
         layout.setColumnStretch(2, 1)
 
 
@@ -410,6 +416,9 @@ class ConfigTab(QWidget):
 
         self.features_section.audio_feature.setChecked(
             features.get("tts_enabled", True))
+
+        self.features_section.bomb_timer_feature.setChecked(
+            features.get("bomb_timer_enabled", True))
 
     def _load_hotkeys(self):
         """Load hotkeys configuration."""
@@ -654,7 +663,9 @@ class ConfigTab(QWidget):
         """Save features configuration."""
         try:
             features_settings = {
-                "tts_enabled": self.features_section.audio_feature.isChecked()}
+                "tts_enabled": self.features_section.audio_feature.isChecked(),
+                "bomb_timer_enabled": self.features_section.bomb_timer_feature.isChecked()
+            }
 
             self.config_service.config["features"] = features_settings
             success = self.config_service.save_config()
