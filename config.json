@@ -10,7 +10,6 @@
         "low_ammo_threshold": 5,
         "server_host": "127.0.0.1",
         "server_port": 59873,
-        "update_rate_limit": 0.1,
         "transition_delay": 0.2
     },
     "hotkeys": {

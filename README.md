@@ -166,7 +166,6 @@ Set this to match your in-game sensitivity setting for accurate compensation.
     "low_ammo_threshold": 5,            // Low ammo warning threshold
     "server_host": "127.0.0.1",         // GSI server address
     "server_port": 59873,               // GSI server port
-    "update_rate_limit": 0.1,           // Update frequency limit
     "transition_delay": 0.2             // Weapon switch delay
 }
 ```
