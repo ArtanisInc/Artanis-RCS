@@ -27,6 +27,13 @@ def setup_logging() -> logging.Logger:
     )
 
     logger = logging.getLogger("RecoilSystem")
+
+    # Reduce verbosity of external libraries
+    logging.getLogger('matplotlib').setLevel(logging.WARNING)
+    logging.getLogger('matplotlib.font_manager').setLevel(logging.WARNING)
+    logging.getLogger('PIL').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+
     logger.info("Logging system initialized")
     return logger
 
@@ -178,9 +185,6 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
 
                 success = recoil_service.start_compensation(
                     allow_manual_when_auto_enabled=False)
-                if success and weapon_detection_service:
-                    # Mark that user has manually initiated RCS
-                    weapon_detection_service.set_user_initiated_start(True)
 
                 if not success:
                     tts_service.speak("Start error")

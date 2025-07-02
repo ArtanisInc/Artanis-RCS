@@ -11,10 +11,7 @@
         "server_host": "127.0.0.1",
         "server_port": 59873,
         "update_rate_limit": 0.1,
-        "transition_delay": 0.2,
-        "startup_grace_period": 3.0,
-        "require_user_initiation": true,
-        "announce_weapon_changes": false
+        "transition_delay": 0.2
     },
     "hotkeys": {
         "exit": "END",

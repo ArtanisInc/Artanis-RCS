@@ -53,9 +53,6 @@ class WeaponDetectionState:
 class WeaponDetectionService:
     """Automatic weapon detection and RCS control service."""
 
-    # Startup protection timing
-    STARTUP_GRACE_PERIOD = 3.0
-
     def __init__(self, recoil_service: RecoilService):
         self.logger = logging.getLogger("WeaponDetectionService")
         self.recoil_service = recoil_service
@@ -63,13 +60,11 @@ class WeaponDetectionService:
         self.enabled = False
         self.detection_state = WeaponDetectionState()
         self.startup_time = time.time()
-        self.user_initiated_start = False
 
         self.auto_weapon_switch = True
         self.auto_rcs_control = True
         self.low_ammo_threshold = 5
         self.min_transition_delay = 0.2
-        self.announce_weapon_changes = False  # Disable TTS for auto changes
 
         self.statistics = {
             "total_updates": 0,
@@ -90,6 +85,17 @@ class WeaponDetectionService:
         try:
             self.enabled = True
             self.detection_state.reset()
+
+            # Clear manually set weapon when transitioning to automatic mode
+            # This ensures clean state until GSI provides weapon data
+            if self.recoil_service.current_weapon:
+                self.logger.debug("Clearing manually set weapon: %s",
+                                self.recoil_service.current_weapon)
+                self.recoil_service.current_weapon = None
+
+            # Always notify status change when detection state changes
+            self.recoil_service._notify_status_changed()
+
             self.logger.info("Weapon detection enabled")
 
             return True
@@ -112,6 +118,10 @@ class WeaponDetectionService:
                 self.detection_state.rcs_was_auto_enabled = False
 
             self.detection_state.reset()
+
+            # Notify RecoilService to update UI status when detection is disabled
+            self.recoil_service._notify_status_changed()
+
             self.logger.info("Weapon detection disabled")
 
             return True
@@ -119,12 +129,6 @@ class WeaponDetectionService:
         except Exception as e:
             self.logger.error("Failed to disable weapon detection: %s", e)
             return False
-
-    def set_user_initiated_start(self, initiated: bool = True):
-        """Mark that user has manually initiated RCS at least once."""
-        self.user_initiated_start = initiated
-        if initiated:
-            self.logger.debug("User-initiated RCS start recorded")
 
     def process_player_state(self, player_state: PlayerState) -> None:
         """Process player state and update RCS accordingly."""
@@ -190,12 +194,8 @@ class WeaponDetectionService:
 
     def _process_rcs_control(self, player_state: PlayerState,
                              current_time: float) -> None:
-        """Process automatic RCS enable/disable control with startup protection."""
+        """Process automatic RCS enable/disable control."""
         if not self.auto_rcs_control:
-            return
-
-        # Protection against automatic startup activation
-        if not self._should_allow_auto_activation(current_time):
             return
 
         should_enable_rcs = player_state.should_enable_rcs
@@ -222,24 +222,6 @@ class WeaponDetectionService:
         except Exception as e:
             self.logger.error("RCS control error: %s", e)
 
-    def _should_allow_auto_activation(self, current_time: float) -> bool:
-        """Determine if automatic RCS activation should be allowed."""
-        # Grace period after startup
-        if current_time - self.startup_time < self.STARTUP_GRACE_PERIOD:
-            self.logger.debug("Auto-activation blocked: startup grace period")
-            return False
-
-        # Allow only if user has already started manually
-        # or if sufficient time has elapsed
-        grace_period_elapsed = (current_time - self.startup_time >
-                                self.STARTUP_GRACE_PERIOD * 2)
-
-        if not self.user_initiated_start and not grace_period_elapsed:
-            self.logger.debug(
-                "Auto-activation blocked: waiting for user initiation")
-            return False
-
-        return True
 
     def _process_ammo_monitoring(self, player_state: PlayerState) -> None:
         """Process ammunition monitoring with silent operation."""
@@ -291,8 +273,6 @@ class WeaponDetectionService:
                                                  self.low_ammo_threshold)
             self.min_transition_delay = config.get("transition_delay",
                                                    self.min_transition_delay)
-            self.announce_weapon_changes = config.get(
-                "announce_weapon_changes", self.announce_weapon_changes)
 
             self.logger.debug("Configuration updated")
             return True
@@ -303,8 +283,6 @@ class WeaponDetectionService:
 
     def get_status(self) -> Dict[str, Any]:
         """Get comprehensive status information."""
-        current_time = time.time()
-
         return {
             "enabled": self.enabled,
             "current_state": {
@@ -312,21 +290,17 @@ class WeaponDetectionService:
                 "previous_weapon": self.detection_state.previous_weapon,
                 "rcs_auto_enabled": self.detection_state.rcs_was_auto_enabled,
                 "last_ammo": self.detection_state.last_ammo_count,
-                "weapon_changes": self.detection_state.weapon_change_count,
-                "user_initiated": self.user_initiated_start
+                "weapon_changes": self.detection_state.weapon_change_count
             },
             "configuration": {
                 "auto_weapon_switch": self.auto_weapon_switch,
                 "auto_rcs_control": self.auto_rcs_control,
                 "low_ammo_threshold": self.low_ammo_threshold,
-                "min_transition_delay": self.min_transition_delay,
-                "announce_weapon_changes": self.announce_weapon_changes
+                "min_transition_delay": self.min_transition_delay
             },
             "timing": {
                 "startup_time": self.startup_time,
-                "grace_period_remaining": max(0, self.STARTUP_GRACE_PERIOD -
-                                              (current_time - self.startup_time)),
-                "auto_activation_allowed": self._should_allow_auto_activation(current_time)
+                "auto_activation_allowed": True
             },
             "statistics": self.statistics.copy(),
             "recoil_service": {

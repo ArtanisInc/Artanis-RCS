@@ -3,7 +3,7 @@ Visualization tab for recoil pattern display with optimized external styles.
 """
 import logging
 import time
-from typing import List
+from typing import List, Optional
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
@@ -171,15 +171,17 @@ class VisualizationTab(QWidget):
             self._pending_weapon = None
             self._do_update_weapon_visualization(weapon_name)
 
-    def update_weapon_visualization(self, weapon_name: str):
+    def update_weapon_visualization(self, weapon_name: Optional[str]):
         """
         Update visualization with specified weapon pattern with debouncing.
 
         Args:
-            weapon_name: Name of weapon to visualize
+            weapon_name: Name of weapon to visualize, or None to clear
         """
+        # Handle weapon clearing (None or empty string)
         if not weapon_name:
-            self.logger.warning("No weapon name provided for visualization")
+            self._clear_visualization()
+            self.current_weapon = None
             return
 
         # Skip if same weapon to avoid unnecessary updates

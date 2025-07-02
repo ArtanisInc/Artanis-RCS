@@ -167,10 +167,7 @@ Set this to match your in-game sensitivity setting for accurate compensation.
     "server_host": "127.0.0.1",         // GSI server address
     "server_port": 59873,               // GSI server port
     "update_rate_limit": 0.1,           // Update frequency limit
-    "transition_delay": 0.2,            // Weapon switch delay
-    "startup_grace_period": 3.0,        // Initial startup delay
-    "require_user_initiation": true,    // Manual activation required
-    "announce_weapon_changes": false    // TTS weapon announcements
+    "transition_delay": 0.2             // Weapon switch delay
 }
 ```
 

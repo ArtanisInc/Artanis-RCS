@@ -227,7 +227,7 @@ class HotkeysSection(ConfigSection):
 
         # Layout system hotkeys
         hotkey_items = [
-            ("Toggle:", 'toggle_recoil', 1, 0),
+            ("Toggle RCS:", 'toggle_recoil', 1, 0),
             ("Weapon Detection:", 'toggle_weapon_detection', 1, 2),
             ("Exit:", 'exit', 2, 0)
         ]
@@ -428,7 +428,16 @@ class ConfigTab(QWidget):
             return
 
         weapon_name = self.global_weapon_section.weapon_combo.currentData()
+
+        # Handle weapon deselection ("Select a weapon..." option)
         if not weapon_name:
+            # Clear weapon parameters display
+            self.params_section.param_controls['multiple'].setValue(0)
+            self.params_section.param_controls['sleep_divider'].setValue(1.0)
+            self.params_section.param_controls['sleep_suber'].setValue(0.0)
+
+            # Emit signal with empty weapon name to clear selection
+            self.weapon_changed.emit("")
             return
 
         weapon = self.config_service.get_weapon_profile(weapon_name)

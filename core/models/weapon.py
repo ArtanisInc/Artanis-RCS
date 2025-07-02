@@ -4,8 +4,6 @@ Weapon profile model with recoil pattern subdivision algorithm.
 import logging
 from typing import List, Dict, Any, Optional
 
-import numpy as np
-
 from core.models.recoil_data import RecoilData
 
 
@@ -48,11 +46,26 @@ class PatternSubdivisionAlgorithm:
 
         # Process each original point
         for i, point in enumerate(pattern_to_process):
+            # Calculate precise subdivision values
+            base_dx = point.dx / multiple
+            base_dy = point.dy / multiple
+
+            # Track fractional parts for precise distribution
+            remaining_dx = point.dx
+            remaining_dy = point.dy
+
             # Subdivide current point
             for j in range(multiple):
-                # Floor division for each sub-point
-                sub_dx = np.floor(point.dx / multiple)
-                sub_dy = np.floor(point.dy / multiple)
+                if j == multiple - 1:
+                    # Last subdivision gets remaining value for exact precision
+                    sub_dx = remaining_dx
+                    sub_dy = remaining_dy
+                else:
+                    # Use precise floating-point division
+                    sub_dx = base_dx
+                    sub_dy = base_dy
+                    remaining_dx -= base_dx
+                    remaining_dy -= base_dy
 
                 result.append(RecoilData(
                     dx=sub_dx,
@@ -67,24 +80,6 @@ class PatternSubdivisionAlgorithm:
             # Update original sum
             sum_x_original += point.dx
             sum_y_original += point.dy
-
-            # Calculate and distribute rounding gaps
-            gap_x = int(round(sum_x_original - sum_x))
-            gap_y = int(round(sum_y_original - sum_y))
-
-            # Distribute X gap (last points of current subdivision)
-            for k in range(gap_x):
-                idx = (multiple * (i + 1)) - k - 1
-                if 0 <= idx < len(result):
-                    result[idx].dx += 1
-                    sum_x += 1
-
-            # Distribute Y gap (last points of current subdivision)
-            for k in range(gap_y):
-                idx = (multiple * (i + 1)) - k - 1
-                if 0 <= idx < len(result):
-                    result[idx].dy += 1
-                    sum_y += 1
 
         return result
 

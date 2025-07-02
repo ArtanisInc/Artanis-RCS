@@ -200,6 +200,19 @@ class MainWindow(QMainWindow):
         # Immediate status refresh
         self._update_gsi_status()
 
+        # Update UI to reflect initial weapon detection state
+        self._sync_initial_ui_state()
+
+    def _sync_initial_ui_state(self):
+        """Synchronize UI with initial service states after full initialization."""
+        try:
+            # Trigger a normal status notification to sync button states
+            # This ensures we use the real-time state instead of a snapshot
+            self.recoil_service._notify_status_changed()
+            self.logger.debug("Initial UI state synchronized with services")
+        except Exception as e:
+            self.logger.error(f"Initial UI state synchronization error: {e}")
+
     def _setup_ui(self):
         """Setup main UI layout with restored interface."""
         self.setWindowTitle("Artanis's RCS")
@@ -271,11 +284,6 @@ class MainWindow(QMainWindow):
             success = self.recoil_service.start_compensation()
 
             if success:
-                # Marquer que l'utilisateur a initié manuellement le RCS
-                if self.weapon_detection_service:
-                    self.weapon_detection_service.set_user_initiated_start(
-                        True)
-
                 self.control_panel.start_button.setEnabled(False)
                 self.control_panel.stop_button.setEnabled(True)
                 self.logger.debug(
@@ -332,16 +340,41 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.logger.error(f"UI synchronization error: {e}")
 
+    def _clear_ui_weapon_selection(self) -> None:
+        """Clear weapon selection in UI when transitioning to automatic mode."""
+        try:
+            weapon_combo = self.config_tab.global_weapon_section.weapon_combo
+
+            # Block signals to prevent recursion
+            weapon_combo.blockSignals(True)
+            weapon_combo.setCurrentIndex(0)  # Set to "Select a weapon..." instead of empty
+            weapon_combo.blockSignals(False)
+
+            # Clear visualization
+            self.visualization_tab._clear_visualization()
+
+            self.logger.debug("UI weapon selection cleared for automatic mode")
+
+        except Exception as e:
+            self.logger.error(f"UI weapon selection clearing error: {e}")
+
     def _update_status(self, status: Dict[str, Any]):
         """Update RCS operational status display with GSI sync."""
-        # RCS activation status
+        # Get status information
         active = status.get('active', False)
-        status_icon = "🟢" if active else "🔴"
-        status_text = "Active" if active else "Inactive"
+        weapon_name = status.get('current_weapon', '')
+
+        # RCS activation status - simplified: Active only when both active and weapon available
+        if active and weapon_name:
+            status_icon = "🟢"
+            status_text = "Active"
+        else:  # inactive OR no weapon = Inactive
+            status_icon = "🔴"
+            status_text = "Inactive"
+
         self.control_panel.status_label.setText(f"{status_icon} {status_text}")
 
         # Current weapon configuration avec synchronisation GSI
-        weapon_name = status.get('current_weapon', '')
         if weapon_name:
             display_name = self.config_service.get_weapon_display_name(
                 weapon_name)
@@ -351,13 +384,19 @@ class MainWindow(QMainWindow):
             self.sync_ui_with_gsi_weapon(weapon_name)
         else:
             weapon_text = "None"
+            # Clear UI weapon selection when no weapon is set
+            self._clear_ui_weapon_selection()
 
         self.control_panel.weapon_label.setText(
             f"Selected weapon: {weapon_text}")
 
         # Control button state management
         manual_activation_allowed = status.get('manual_activation_allowed', True)
-        self._update_manual_controls_state(manual_activation_allowed and not active, active)
+        # Enable start button when manual activation allowed and not active
+        # Weapon validation will be handled in _start_compensation() with user feedback
+        start_enabled = manual_activation_allowed and not active
+        stop_enabled = active
+        self._update_manual_controls_state(start_enabled, stop_enabled)
 
     def _update_gsi_status(self):
         """Update GSI subsystem status with granular information."""
@@ -416,12 +455,18 @@ class MainWindow(QMainWindow):
 
     def _on_weapon_changed(self, weapon_name: str):
         """Handle weapon selection change event."""
-        # Update visualization tab
-        self.visualization_tab.update_weapon_visualization(weapon_name)
-
-        # Update recoil service configuration
-        if self.recoil_service.current_weapon != weapon_name:
-            self.recoil_service.set_weapon(weapon_name)
+        # Handle weapon deselection
+        # Update visualization tab (handle deselection)
+        if not weapon_name:
+            self.visualization_tab.update_weapon_visualization(None)
+            # Clear weapon in recoil service
+            if self.recoil_service.current_weapon is not None:
+                self.recoil_service.set_weapon("")
+        else:
+            self.visualization_tab.update_weapon_visualization(weapon_name)
+            # Update recoil service configuration
+            if self.recoil_service.current_weapon != weapon_name:
+                self.recoil_service.set_weapon(weapon_name)
 
     def _on_settings_saved(self):
         """Handle settings save event with dynamic reconfiguration."""
@@ -464,7 +509,7 @@ class MainWindow(QMainWindow):
     def _update_manual_controls_state(self, start_enabled: bool, stop_enabled: bool):
         """Update the state of manual control buttons based on automatic detection status."""
         try:
-            # Vérifier si la détection automatique est active
+            # Use the passed parameters to set button states directly
             auto_detection_active = (
                 self.weapon_detection_service and
                 self.weapon_detection_service.enabled

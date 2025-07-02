@@ -56,6 +56,26 @@ class RecoilService:
 
     def set_weapon(self, weapon_name: str) -> bool:
         """Set current weapon for compensation with conditional TTS notification."""
+        # Handle weapon deselection (empty string means "no weapon")
+        if not weapon_name:
+            weapon_changed = self.current_weapon is not None
+
+            # If compensation is active, stop it gracefully before clearing weapon
+            if self.active:
+                self.logger.info("Stopping active compensation before weapon deselection")
+                success = self.stop_compensation()
+                if not success:
+                    self.logger.warning("Failed to stop compensation during weapon deselection")
+
+            self.current_weapon = None
+            self.logger.info("Current weapon: None (deselected)")
+
+            # Notify observers of weapon change
+            if weapon_changed:
+                self._notify_status_changed()
+
+            return True
+
         if weapon_name not in self.config_service.weapon_profiles:
             self.logger.warning("Weapon not found: %s", weapon_name)
             if self.tts_service and self._should_announce_weapon():
