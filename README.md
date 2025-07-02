@@ -32,6 +32,9 @@
 * Text-to-speech (TTS) for system events
 * Voice alerts for critical events and weapon changes
 
+💣 **Bomb Timer System**
+* Real-time bomb countdown display with circular progress overlay
+
 ---
 
 ## 🛠️ **Technical Architecture**
@@ -55,6 +58,7 @@ artanis-rcs/
 │       ├── input_service.py         # Mouse input control (SendInput API)
 │       ├── hotkey_service.py        # Global keyboard hotkey handling
 │       ├── tts_service.py           # Text-to-speech feedback system
+│       ├── bomb_timer_service.py    # Bomb countdown timer and defuse alerts
 │       └── timing_service.py        # Precise timing control
 ├── ui/                              # User interface components
 │   ├── views/                       # Main application views
@@ -63,7 +67,8 @@ artanis-rcs/
 │   │   ├── visualization_tab.py     # Pattern visualization
 │   │   └── styles.py                # UI styling and themes
 │   └── widgets/                     # Custom UI components
-│       └── pattern_visualizer.py    # Recoil pattern display widget
+│       ├── pattern_visualizer.py    # Recoil pattern display widget
+│       └── bomb_timer_overlay.py    # Bomb countdown overlay widget
 ├── patterns/                        # Recoil pattern data (CSV format)
 │   ├── ak47.csv                     # AK-47 spray pattern
 │   ├── m4a4.csv                     # M4A4 spray pattern
@@ -153,7 +158,8 @@ Set this to match your in-game sensitivity setting for accurate compensation.
 #### **Feature Toggles**
 ```json
 "features": {
-    "tts_enabled": true          // Enable/disable audio feedback
+    "tts_enabled": true,         // Enable/disable audio feedback
+    "bomb_timer_enabled": true   // Enable/disable bomb timer overlay
 }
 ```
 
