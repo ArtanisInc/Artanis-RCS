@@ -201,7 +201,7 @@ class BombTimerService(QObject):
         if self.bomb_timer_active:
             self._stop_bomb_timer()
         self.qt_timer.stop()
-        self.logger.info("Bomb timer service stopped")
+        self.logger.debug("Bomb timer service stopped")
 
     def check_config_and_update(self) -> None:
         """Force check configuration and update state accordingly."""

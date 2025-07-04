@@ -177,7 +177,11 @@ class WeaponDetectionService:
             if new_weapon:
                 success = self.recoil_service.set_weapon(new_weapon)
                 if success:
-                    self.logger.info("Auto-switched to weapon: %s", new_weapon)
+                    # Only log weapon switches, not reconfirmations
+                    if new_weapon != self.detection_state.previous_weapon:
+                        self.logger.info("Auto-switched to weapon: %s", new_weapon)
+                    else:
+                        self.logger.debug("Weapon reconfirmed: %s", new_weapon)
 
                     # Silent weapon change - no TTS announcement
                     # The TTS suppression is handled by
@@ -209,7 +213,7 @@ class WeaponDetectionService:
                     if success:
                         self.detection_state.rcs_was_auto_enabled = True
                         self.statistics["rcs_activations"] += 1
-                        self.logger.info("RCS auto-enabled by GSI detection")
+                        self.logger.debug("RCS auto-enabled by GSI detection")
 
             elif (not should_enable_rcs and rcs_currently_active and
                   self.detection_state.rcs_was_auto_enabled):

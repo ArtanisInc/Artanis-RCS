@@ -13,7 +13,6 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 from core.services.config_service import ConfigService
-from ui.views.styles import CONFIG_TAB_STYLES
 
 
 class ConfigSection:
@@ -153,7 +152,7 @@ class FeaturesSection(ConfigSection):
 
     def __init__(self):
         self.section = QGroupBox("Features")
-        self.section.setMaximumHeight(110)  # Increased height for bomb timer
+        self.section.setMaximumHeight(100)  # Reduced height since we use 2 columns now
         self._setup_ui()
 
     def _setup_ui(self):
@@ -171,23 +170,31 @@ class FeaturesSection(ConfigSection):
         self.bomb_timer_feature.setChecked(True)
         self.bomb_timer_feature.setFont(QFont("Arial", 10))
 
-        # Save button
-        self.save_features_button = self.create_styled_button("Save", 120)
+        # Auto Accept feature checkbox
+        self.auto_accept_feature = QCheckBox("Auto Accept Matches")
+        self.auto_accept_feature.setChecked(False)
+        self.auto_accept_feature.setFont(QFont("Arial", 10))
 
-        # Layout arrangement
+        # Layout arrangement in two columns to optimize space
+        # Column 1: Audio and Bomb Timer
         layout.addWidget(self.audio_feature, 0, 0)
         layout.addWidget(self.bomb_timer_feature, 1, 0)
-        layout.addWidget(self.save_features_button, 0, 1, 2, 1)  # Span 2 rows
-        layout.setColumnStretch(2, 1)
+
+        # Column 2: Auto Accept
+        layout.addWidget(self.auto_accept_feature, 0, 1)
+
+        # Set column stretches for better distribution
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 1)
 
 
 
 class HotkeysSection(ConfigSection):
-    """Hotkeys configuration section."""
+    """Hotkeys configuration section with System and Weapon sub-groups."""
 
     def __init__(self):
-        self.section = QGroupBox("Keyboard Shortcuts")
-        self.section.setMaximumHeight(300)
+        self.section = QGroupBox("Keyboard Shortcuts")  # Main group box as before
+        self.section.setMaximumHeight(320)
         self.hotkey_controls = {}
         self.key_options = self._get_key_options()
         self._setup_ui()
@@ -198,27 +205,39 @@ class HotkeysSection(ConfigSection):
                 [f"F{i}" for i in range(1, 13)])
 
     def _setup_ui(self):
-        layout = QGridLayout(self.section)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(8)
+        main_layout = QVBoxLayout(self.section)
+        main_layout.setContentsMargins(12, 10, 12, 10)
+        main_layout.setSpacing(8)
 
-        # System hotkeys section
-        self._create_system_hotkeys_section(layout)
+        # System hotkeys sub-group
+        self.system_group = QGroupBox("SYSTEM")
+        self.system_group.setMaximumHeight(110)
+        main_layout.addWidget(self.system_group)
 
-        # Weapon hotkeys section
-        self._create_weapon_hotkeys_section(layout)
+        # Weapon hotkeys sub-group
+        self.weapon_group = QGroupBox("WEAPONS")
+        self.weapon_group.setMaximumHeight(130)
+        main_layout.addWidget(self.weapon_group)
+
+        # Setup each section
+        self._setup_system_hotkeys()
+        self._setup_weapon_hotkeys()
 
         # Save button
+        save_layout = QHBoxLayout()
+        save_layout.addStretch()
         self.save_hotkeys_button = self.create_styled_button("Save")
-        layout.addWidget(self.save_hotkeys_button, 6, 0, 1, 4)
+        self.save_hotkeys_button.setMinimumWidth(120)
+        save_layout.addWidget(self.save_hotkeys_button)
+        save_layout.addStretch()
 
-    def _create_system_hotkeys_section(self, layout):
-        """Create system hotkeys controls."""
-        # Section title
-        system_title = QLabel("SYSTEM")
-        system_title.setObjectName("section_title_header")
-        system_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(system_title, 0, 0, 1, 4)
+        main_layout.addLayout(save_layout)
+
+    def _setup_system_hotkeys(self):
+        """Setup system hotkeys controls in their group box."""
+        layout = QGridLayout(self.system_group)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(6)
 
         # Create system hotkey controls
         system_hotkeys = ['toggle_recoil', 'toggle_weapon_detection', 'exit']
@@ -233,15 +252,63 @@ class HotkeysSection(ConfigSection):
 
         # Layout system hotkeys
         hotkey_items = [
-            ("Toggle RCS:", 'toggle_recoil', 1, 0),
-            ("Weapon Detection:", 'toggle_weapon_detection', 1, 2),
-            ("Exit:", 'exit', 2, 0)
+            ("Toggle RCS:", 'toggle_recoil', 0, 0),
+            ("Toggle Detection:", 'toggle_weapon_detection', 0, 2),
+            ("Exit Application:", 'exit', 1, 0)
         ]
 
         for label_text, key, row, col in hotkey_items:
-            label = self.create_styled_label(label_text)
+            label = QLabel(label_text)
+            label.setFont(QFont("Arial", 10))
             layout.addWidget(label, row, col)
             layout.addWidget(self.hotkey_controls[key], row, col + 1)
+
+    def _setup_weapon_hotkeys(self):
+        """Setup weapon hotkeys controls in their group box."""
+        layout = QGridLayout(self.weapon_group)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(6)
+
+        # Weapon selection
+        weapon_label = self.create_styled_label("Weapon:")
+        self.weapon_hotkey_combo = QComboBox()
+        self.weapon_hotkey_combo.setObjectName("weapon_hotkey_combo")
+        self.weapon_hotkey_combo.setMaximumHeight(26)
+        self.weapon_hotkey_combo.setFont(QFont("Arial", 10))
+
+        # Key selection
+        key_label = self.create_styled_label("Key:")
+        self.key_hotkey_combo = QComboBox()
+        self.key_hotkey_combo.setObjectName("key_hotkey_combo")
+        self.key_hotkey_combo.setMaximumHeight(26)
+        self.key_hotkey_combo.setMaximumWidth(100)
+        self.key_hotkey_combo.setFont(QFont("Arial", 10))
+
+        # Add key options
+        self.key_hotkey_combo.addItem("None", "")
+        for option in self.key_options:
+            self.key_hotkey_combo.addItem(option)
+
+        # Action buttons
+        self.assign_weapon_key_button = self._create_weapon_button("Assign")
+        self.remove_weapon_key_button = self._create_weapon_button("Remove")
+
+        # Layout weapon controls
+        layout.addWidget(weapon_label, 0, 0)
+        layout.addWidget(self.weapon_hotkey_combo, 0, 1)
+        layout.addWidget(key_label, 0, 2)
+        layout.addWidget(self.key_hotkey_combo, 0, 3)
+
+        # Button layout
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(self.assign_weapon_key_button)
+        buttons_layout.addWidget(self.remove_weapon_key_button)
+        buttons_layout.addStretch()
+
+        buttons_widget = QWidget()
+        buttons_widget.setLayout(buttons_layout)
+        layout.addWidget(buttons_widget, 1, 0, 1, 4)
 
     def _create_weapon_hotkeys_section(self, layout):
         """Create weapon hotkeys controls."""
@@ -318,7 +385,6 @@ class ConfigTab(QWidget):
 
         self._setup_ui()
         self._setup_connections()
-        self._apply_styles()
         self._load_data()
 
         self.logger.debug("Configuration tab initialized")
@@ -345,10 +411,16 @@ class ConfigTab(QWidget):
             self._save_global_config)
         self.params_section.save_config_button.clicked.connect(
             self._save_weapon_config)
-        self.features_section.save_features_button.clicked.connect(
-            self._save_features_config)
         self.hotkeys_section.save_hotkeys_button.clicked.connect(
             self._save_hotkeys_config)
+
+        # Features auto-save (no save button)
+        self.features_section.audio_feature.toggled.connect(
+            self._save_features_config)
+        self.features_section.bomb_timer_feature.toggled.connect(
+            self._save_features_config)
+        self.features_section.auto_accept_feature.toggled.connect(
+            self._save_features_config)
 
         # Weapon hotkeys
         self.hotkeys_section.weapon_hotkey_combo.currentIndexChanged.connect(
@@ -357,10 +429,6 @@ class ConfigTab(QWidget):
             self._assign_weapon_key)
         self.hotkeys_section.remove_weapon_key_button.clicked.connect(
             self._remove_weapon_key)
-
-    def _apply_styles(self):
-        """Apply CSS styles."""
-        self.setStyleSheet(CONFIG_TAB_STYLES)
 
     def _load_data(self):
         """Load data from configuration service."""
@@ -419,6 +487,9 @@ class ConfigTab(QWidget):
 
         self.features_section.bomb_timer_feature.setChecked(
             features.get("bomb_timer_enabled", True))
+
+        self.features_section.auto_accept_feature.setChecked(
+            features.get("auto_accept_enabled", False))
 
     def _load_hotkeys(self):
         """Load hotkeys configuration."""
@@ -662,24 +733,26 @@ class ConfigTab(QWidget):
     def _save_features_config(self):
         """Save features configuration."""
         try:
+            # Save all features settings in one place
             features_settings = {
                 "tts_enabled": self.features_section.audio_feature.isChecked(),
-                "bomb_timer_enabled": self.features_section.bomb_timer_feature.isChecked()
+                "bomb_timer_enabled": self.features_section.bomb_timer_feature.isChecked(),
+                "auto_accept_enabled": self.features_section.auto_accept_feature.isChecked()
             }
-
             self.config_service.config["features"] = features_settings
+
+            # Save configuration
             success = self.config_service.save_config()
 
             if success:
-                QMessageBox.information(
-                    self, "Success", "Features configuration saved")
+                # Emit signal to notify about the change
                 self.settings_saved.emit()
+                self.logger.debug("Features configuration saved")
             else:
-                QMessageBox.warning(self, "Warning", "Save failed")
+                self.logger.warning("Failed to save features configuration")
 
         except Exception as e:
             self.logger.error("Features config save failed: %s", e)
-            QMessageBox.critical(self, "Error", f"Save error: {e}")
 
     def _save_hotkeys_config(self):
         """Save hotkeys configuration with conflict validation."""
@@ -691,7 +764,7 @@ class ConfigTab(QWidget):
                 conflict_details = "\n".join(
                     [f"• {conflict}" for conflict in conflicts])
                 error_message = (
-                    "⚠️ HOTKEY CONFLICT DETECTED\n\n"
+                    "HOTKEY CONFLICT DETECTED\n\n"
                     "Multiple actions share the same key:\n\n"
                     f"{conflict_details}\n\n"
                     "❌ Save cancelled.\n"

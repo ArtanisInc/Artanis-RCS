@@ -68,7 +68,7 @@ class RecoilService:
                     self.logger.warning("Failed to stop compensation during weapon deselection")
 
             self.current_weapon = None
-            self.logger.info("Current weapon: None (deselected)")
+            self.logger.info("Current weapon: None")
 
             # Notify observers of weapon change
             if weapon_changed:
@@ -78,13 +78,15 @@ class RecoilService:
 
         if weapon_name not in self.config_service.weapon_profiles:
             self.logger.warning("Weapon not found: %s", weapon_name)
-            if self.tts_service and self._should_announce_weapon():
-                self.tts_service.speak("Weapon not found")
             return False
 
         weapon_changed = self.current_weapon != weapon_name
         self.current_weapon = weapon_name
-        self.logger.info("Current weapon: %s", weapon_name)
+        # Only log weapon changes to reduce repetitive logs
+        if weapon_changed:
+            self.logger.info("Current weapon: %s", weapon_name)
+        else:
+            self.logger.debug("Weapon reconfirmed: %s", weapon_name)
 
         # Signal weapon change to compensation thread
         if weapon_changed and self.active:
@@ -119,8 +121,6 @@ class RecoilService:
 
         # Empêcher l'activation manuelle si la détection automatique est active
         if not allow_manual_when_auto_enabled and self._is_manual_activation_blocked():
-            if self.tts_service:
-                self.tts_service.speak("Manual activation blocked, automatic weapon detection active")
             self.logger.info("Manual compensation start blocked: automatic weapon detection active")
             return False
 
@@ -136,7 +136,11 @@ class RecoilService:
                 daemon=True
             )
             self.running_thread.start()
-            self.logger.info("Compensation started")
+            # Only log compensation start if manual activation or different weapon
+            if not self.weapon_detection_service or not self.weapon_detection_service.enabled:
+                self.logger.info("Compensation started")
+            else:
+                self.logger.debug("Compensation started (auto-detection)")
 
             # Announce only if not in automatic weapon detection mode
             if self.tts_service and self._should_announce_weapon():
@@ -155,8 +159,6 @@ class RecoilService:
         except Exception as e:
             self.logger.error("Compensation start failed: %s", e)
             self.active = False
-            if self.tts_service and self._should_announce_weapon():
-                self.tts_service.speak("Start error")
             return False
 
     def stop_compensation(self) -> bool:
@@ -170,7 +172,11 @@ class RecoilService:
                 self.running_thread.join(timeout=1.0)
 
             self.active = False
-            self.logger.info("Compensation stopped")
+            # Only log compensation stop if manual activation or errors occur
+            if not self.weapon_detection_service or not self.weapon_detection_service.enabled:
+                self.logger.info("Compensation stopped")
+            else:
+                self.logger.debug("Compensation stopped (auto-detection)")
 
             # Announce only if not in automatic weapon detection mode
             if self.tts_service and self._should_announce_weapon():
@@ -181,8 +187,6 @@ class RecoilService:
 
         except Exception as e:
             self.logger.error("Compensation stop failed: %s", e)
-            if self.tts_service and self._should_announce_weapon():
-                self.tts_service.speak("Stop error")
             return False
 
     def is_manual_activation_allowed(self) -> bool:
@@ -253,15 +257,11 @@ class RecoilService:
                 weapon = self.get_current_weapon()
                 if not weapon:
                     self.logger.error("No weapon available for compensation")
-                    if self.tts_service and self._should_announce_weapon():
-                        self.tts_service.speak("Critical error, no weapon")
                     break
 
                 pattern = weapon.calculated_pattern
                 if not pattern:
                     self.logger.error("Empty pattern for weapon")
-                    if self.tts_service and self._should_announce_weapon():
-                        self.tts_service.speak("Pattern error")
                     break
 
                 # Log weapon changes
@@ -295,11 +295,7 @@ class RecoilService:
                             self.timing_service.combined_sleep_2(1)
 
             except Exception as e:
-                self.logger.error(
-                    "Compensation loop error: %s",
-                    e, exc_info=True)
-                if self.tts_service and self._should_announce_weapon():
-                    self.tts_service.speak("Critical system error")
+                self.logger.error("Compensation loop error: %s", e, exc_info=True)
 
             self.timing_service.combined_sleep_2(1)
 

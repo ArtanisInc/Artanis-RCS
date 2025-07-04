@@ -15,7 +15,6 @@ from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
 from ui.widgets.pattern_visualizer import PatternVisualizer
-from ui.views.styles import VISUALIZATION_TAB_STYLES
 
 
 class VisualizationControls:
@@ -119,7 +118,6 @@ class VisualizationTab(QWidget):
 
         self._setup_ui()
         self._setup_connections()
-        self._apply_styles()
 
         self.logger.debug("Visualization tab initialized")
 
@@ -140,10 +138,6 @@ class VisualizationTab(QWidget):
 
         # Flexible space at bottom
         main_layout.addStretch()
-
-    def _apply_styles(self):
-        """Apply externalized CSS styles."""
-        self.setStyleSheet(VISUALIZATION_TAB_STYLES)
 
     def _setup_connections(self):
         """Configure signal connections."""

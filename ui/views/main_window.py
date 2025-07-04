@@ -16,7 +16,6 @@ from core.services.recoil_service import RecoilService
 from core.services.config_service import ConfigService
 from ui.views.config_tab import ConfigTab
 from ui.views.visualization_tab import VisualizationTab
-from ui.views.styles import MAIN_WINDOW_STYLES
 from ui.widgets.bomb_timer_overlay import BombTimerOverlay
 
 
@@ -169,6 +168,7 @@ class MainWindow(QMainWindow):
         self.gsi_service = None
         self.weapon_detection_service = None
         self.bomb_timer_service = None
+        self.auto_accept_service = None
 
         # UI components
         self.control_panel = ControlPanel()
@@ -183,7 +183,6 @@ class MainWindow(QMainWindow):
 
         self._setup_ui()
         self._setup_connections()
-        self._apply_styles()
 
         # Register status callback with recoil service
         self.recoil_service.register_status_changed_callback(
@@ -218,6 +217,11 @@ class MainWindow(QMainWindow):
         )
 
         self.logger.debug("Bomb timer service connected to overlay")
+
+    def set_auto_accept_service(self, auto_accept_service):
+        """Set auto accept service reference."""
+        self.auto_accept_service = auto_accept_service
+        self.logger.debug("Auto accept service reference set")
 
     def _sync_initial_ui_state(self):
         """Synchronize UI with initial service states after full initialization."""
@@ -261,7 +265,6 @@ class MainWindow(QMainWindow):
 
         self.tabs.addTab(self.config_tab, "⚙️ Configuration")
         self.tabs.addTab(self.visualization_tab, "📊 Visualization")
-
         main_layout.addWidget(self.tabs)
 
         # Fixed window dimensions
@@ -280,10 +283,6 @@ class MainWindow(QMainWindow):
         self.config_tab.settings_saved.connect(self._on_settings_saved)
         self.config_tab.hotkeys_updated.connect(self._on_hotkeys_updated)
         self.tabs.currentChanged.connect(self._on_tab_changed)
-
-    def _apply_styles(self):
-        """Apply application stylesheet."""
-        self.setStyleSheet(MAIN_WINDOW_STYLES)
 
     def _start_compensation(self):
         """Start recoil compensation with validation and error handling."""
@@ -491,6 +490,14 @@ class MainWindow(QMainWindow):
         tts_enabled = features.get("tts_enabled", True)
         self.recoil_service.configure_tts(tts_enabled)
 
+        # Update Auto Accept configuration if service available
+        if self.auto_accept_service:
+            auto_accept_enabled = features.get("auto_accept_enabled", False)
+            if auto_accept_enabled:
+                self.auto_accept_service.enable()
+            else:
+                self.auto_accept_service.disable()
+
         # Update GSI configuration if service available
         if self.weapon_detection_service:
             gsi_config = self.config_service.config.get("gsi", {})
@@ -586,7 +593,7 @@ class MainWindow(QMainWindow):
                 self._update_status)
 
             self.logger.info(
-                "Main window closed with resource cleanup")
+                "RCS System closed")
 
             if a0:
                 a0.accept()

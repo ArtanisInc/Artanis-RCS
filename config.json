@@ -2,7 +2,8 @@
     "game_sensitivity": 1.08,
     "features": {
         "tts_enabled": true,
-        "bomb_timer_enabled": true
+        "bomb_timer_enabled": false,
+        "auto_accept_enabled": false
     },
     "gsi": {
         "enabled": true,

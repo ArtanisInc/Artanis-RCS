@@ -4,22 +4,70 @@ Recoil Compensation System.
 import sys
 import logging
 import time
+import os
 from typing import Tuple
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import QTimer
+import qdarktheme
 
 from core.services.hotkey_service import HotkeyService, HotkeyAction
 from core.services.tts_service import TTSService
 from core.services.gsi_service import GSIService
 from core.services.weapon_detection_service import WeaponDetectionService
 from core.services.bomb_timer_service import BombTimerService
+from core.services.auto_accept_service import AutoAcceptService
+
+
+def setup_dark_theme(app: QApplication, theme: str = "dark") -> bool:
+    """
+    Setup PyQtDarkTheme with version compatibility.
+
+    Args:
+        app: QApplication instance
+        theme: Theme name ("dark", "light", or "auto" if supported)
+
+    Returns:
+        bool: True if theme was applied successfully
+    """
+    try:
+        # Try new API first (PyQtDarkTheme 2.x)
+        if hasattr(qdarktheme, 'setup_theme'):
+            qdarktheme.setup_theme(theme)
+            return True
+        # Fall back to old API (PyQtDarkTheme 1.x and earlier)
+        elif hasattr(qdarktheme, 'load_stylesheet'):
+            # Old API only supports "dark" and "light", not "auto"
+            if theme == "auto":
+                theme = "dark"  # Default to dark for auto mode
+            app.setStyleSheet(qdarktheme.load_stylesheet(theme))
+            return True
+        else:
+            print("Warning: PyQtDarkTheme API methods not found")
+            return False
+    except Exception as e:
+        print(f"Warning: Failed to apply PyQtDarkTheme: {e}")
+        return False
+
+
+def cleanup_log_file():
+    """Clean up the log file at startup."""
+    log_file = 'recoil_system.log'
+    try:
+        if os.path.exists(log_file):
+            os.remove(log_file)
+            print(f"Previous log file '{log_file}' cleaned up")
+    except Exception as e:
+        print(f"Warning: Could not clean up log file '{log_file}': {e}")
 
 
 def setup_logging() -> logging.Logger:
     """Configure logging system."""
+    # Clean up previous log file
+    cleanup_log_file()
+
     logging.basicConfig(
-        level=logging.INFO,  # Restored to INFO
+        level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler('recoil_system.log'),
@@ -85,6 +133,12 @@ def initialize_system() -> Tuple:
         # Initialize bomb timer service
         bomb_timer_service = BombTimerService(config_service)
 
+        # Initialize Auto Accept service
+        auto_accept_service = AutoAcceptService(config_service, input_service, tts_service)
+
+        # Connect GSI service to Auto Accept (for better path detection)
+        auto_accept_service.set_gsi_service(gsi_service)
+
         # Log grouped services summary
         services_summary = [
             "Input",
@@ -92,13 +146,14 @@ def initialize_system() -> Tuple:
             "Recoil",
             "Weapon Detection",
             "Bomb Timer",
+            "Auto Accept",
             f"Hotkeys ({len(hotkey_service.hotkey_mappings)} active)"
         ]
         logger.info("Core services initialized: %s", ", ".join(services_summary))
 
         logger.info("System initialized successfully")
         return (config_service, input_service, recoil_service, hotkey_service,
-                tts_service, gsi_service, weapon_detection_service, bomb_timer_service)
+                tts_service, gsi_service, weapon_detection_service, bomb_timer_service, auto_accept_service)
 
     except Exception as e:
         logger.critical("System initialization failed: %s", e, exc_info=True)
@@ -138,7 +193,7 @@ def setup_gsi_integration(gsi_service: GSIService,
 
 
 def create_gui(config_service, recoil_service, hotkey_service, tts_service,
-               gsi_service=None, weapon_detection_service=None, bomb_timer_service=None):
+               gsi_service=None, weapon_detection_service=None, bomb_timer_service=None, auto_accept_service=None):
     """Create main GUI window."""
     from ui.views.main_window import MainWindow
 
@@ -156,8 +211,11 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
         if bomb_timer_service:
             window.set_bomb_timer_service(bomb_timer_service)
 
+        if auto_accept_service:
+            window.set_auto_accept_service(auto_accept_service)
+
         setup_hotkey_callbacks(window, recoil_service, hotkey_service,
-                               tts_service, weapon_detection_service)
+                               tts_service, weapon_detection_service, auto_accept_service)
 
         logger.info("GUI initialized: Main window, Config tab, Visualization tab")
         return window
@@ -168,7 +226,7 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
 
 
 def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
-                           tts_service, weapon_detection_service=None):
+                           tts_service, weapon_detection_service=None, auto_accept_service=None):
     """Configure hotkey callbacks with TTS coordination."""
     logger = logging.getLogger("HotkeySetup")
 
@@ -178,7 +236,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
             if recoil_service.active:
                 success = recoil_service.stop_compensation()
                 if not success:
-                    tts_service.speak("Stop error")
+                    logger.error("Failed to stop compensation")
             else:
                 current_weapon = recoil_service.current_weapon
 
@@ -186,10 +244,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                     current_weapon = main_window.config_tab.get_selected_weapon()
 
                 if not current_weapon:
-                    logger.warning(
-                        "No weapon available for hotkey start (GSI or manual)")
-                    # Always announce critical errors regardless of detection
-                    # mode
+                    logger.warning("No weapon available")
                     tts_service.speak("No weapon available")
                     return
 
@@ -200,14 +255,13 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                     allow_manual_when_auto_enabled=False)
 
                 if not success:
-                    tts_service.speak("Start error")
+                    logger.error("Failed to start compensation")
 
             action_text = "started" if recoil_service.active else "stopped"
             logger.debug("Compensation %s via hotkey", action_text)
 
         except Exception as e:
             logger.error("Toggle compensation error: %s", e)
-            tts_service.speak("System error")
 
     def toggle_weapon_detection_action():
         """Toggle weapon detection GSI feature."""
@@ -225,14 +279,35 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                 if success:
                     tts_service.speak(f"Weapon detection {status_text}")
                 else:
-                    tts_service.speak("Detection error")
+                    logger.error("Failed to toggle weapon detection")
             else:
                 logger.warning("Weapon detection service not available")
-                tts_service.speak("Detection unavailable")
 
         except Exception as e:
             logger.error("Toggle weapon detection error: %s", e)
-            tts_service.speak("Detection error")
+
+    def toggle_auto_accept_action():
+        """Toggle Auto Accept feature."""
+        try:
+            if auto_accept_service:
+                if auto_accept_service.is_enabled():
+                    success = auto_accept_service.disable()
+                    status_text = "disabled" if success else "disable failed"
+                else:
+                    success = auto_accept_service.enable()
+                    status_text = "enabled" if success else "enable failed"
+
+                logger.debug("Auto Accept %s via hotkey", status_text)
+
+                if success:
+                    logger.info("Auto Accept %s", status_text)
+                else:
+                    logger.error("Failed to toggle Auto Accept")
+            else:
+                logger.warning("Auto Accept service not available")
+
+        except Exception as e:
+            logger.error("Toggle Auto Accept error: %s", e)
 
     def exit_action():
         """Exit application."""
@@ -270,11 +345,9 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                 logger.debug("Weapon selected via hotkey: %s", weapon_name)
             else:
                 logger.warning("Weapon not found in UI: %s", weapon_name)
-                tts_service.speak("Weapon not found")
 
         except Exception as e:
             logger.error("Weapon selection error: %s", e)
-            tts_service.speak("Selection error")
 
     try:
         hotkey_service.register_action_callback(HotkeyAction.TOGGLE_RECOIL,
@@ -299,11 +372,14 @@ def main():
 
     try:
         app = QApplication(sys.argv)
-        app.setStyle('Fusion')
+
+        # Apply PyQtDarkTheme with version compatibility
+        if not setup_dark_theme(app, "dark"):
+            logger.warning("Failed to apply PyQtDarkTheme, using default styling")
 
         (config_service, input_service, recoil_service, hotkey_service,
          tts_service, gsi_service,
-         weapon_detection_service, bomb_timer_service) = initialize_system()
+         weapon_detection_service, bomb_timer_service, auto_accept_service) = initialize_system()
 
         gsi_enabled = config_service.config.get("gsi", {}).get("enabled", True)
         if gsi_enabled:
@@ -318,7 +394,8 @@ def main():
             weapon_detection_service = None
 
         window = create_gui(config_service, recoil_service, hotkey_service,
-                            tts_service, gsi_service, weapon_detection_service, bomb_timer_service)
+                            tts_service, gsi_service, weapon_detection_service,
+                            bomb_timer_service, auto_accept_service)
         window.show()
 
         timer = QTimer()
@@ -327,7 +404,7 @@ def main():
 
         def cleanup_on_exit():
             """Clean shutdown with GSI cleanup."""
-            logger.info("Cleaning up on exit...")
+            logger.debug("Cleaning up on exit...")
             try:
                 hotkey_service.stop_monitoring()
                 if recoil_service.active:
@@ -338,6 +415,8 @@ def main():
                     gsi_service.stop_server()
                 if bomb_timer_service:
                     bomb_timer_service.stop()
+                if auto_accept_service:
+                    auto_accept_service.disable()
                 tts_service.stop()
             except Exception as e:
                 logger.error("Cleanup error: %s", e)
@@ -345,10 +424,7 @@ def main():
         app.aboutToQuit.connect(cleanup_on_exit)
 
         logger.info("=== RCS System Started ===")
-        if gsi_service:
-            tts_service.speak("RCS system with weapon detection ready")
-        else:
-            tts_service.speak("RCS system ready")
+        tts_service.speak("RCS system ready")
 
         sys.exit(app.exec_())
 

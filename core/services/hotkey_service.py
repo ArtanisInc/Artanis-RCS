@@ -220,7 +220,7 @@ class HotkeyService:
                 self.monitoring_thread.join(timeout=2.0)
 
             self.is_monitoring = False
-            self.logger.info("Hotkey monitoring stopped")
+            self.logger.debug("Hotkey monitoring stopped")
             return True
 
         except Exception as e:

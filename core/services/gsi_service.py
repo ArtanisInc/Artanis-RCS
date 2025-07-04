@@ -158,9 +158,9 @@ class GSIConfigService:
 {{
     "uri"                    "{uri}"
     "timeout"                "5.0"
-    "buffer"                 "0.1"
+    "buffer"                 "0.0"
     "throttle"               "0.1"
-    "heartbeat"              "30.0"
+    "heartbeat"              "10.0"
     "data"
     {{
         "provider"                 "1"      // Game version info

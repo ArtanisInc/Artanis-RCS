@@ -209,12 +209,12 @@ class TTSService:
                     if not self._initialize_sapi():
                         self.enabled = False
                         return False
-                self.logger.info("TTS service enabled")
+                self.logger.debug("TTS service enabled")
             else:
                 # Disable TTS
                 self.stop()
                 self.enabled = False
-                self.logger.info("TTS service disabled")
+                self.logger.debug("TTS service disabled")
 
             return True
 
@@ -241,7 +241,7 @@ class TTSService:
                 except Exception:
                     pass  # COM might not be initialized
 
-            self.logger.info("TTS service stopped")
+            self.logger.debug("TTS service stopped")
 
         except Exception as e:
             self.logger.error("Error stopping TTS service: %s", e)

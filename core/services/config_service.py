@@ -209,7 +209,7 @@ class ConfigService:
             success = self.config_repository.save_config(self.config)
 
             if success:
-                self.logger.info("Configuration saved successfully")
+                self.logger.debug("Configuration saved successfully")
             else:
                 self.logger.error("Configuration save failed")
 
