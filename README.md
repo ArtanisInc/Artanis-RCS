@@ -24,7 +24,7 @@
 * Instant pattern switching
 
 🖥️ **Advanced User Interface**
-* Modern, intuitive PyQt5 GUI
+* Modern, intuitive PyQt5 GUI with PyQtDarkTheme
 * Recoil pattern visualization
 * Live system status and configuration management
 
@@ -35,47 +35,57 @@
 💣 **Bomb Timer System**
 * Real-time bomb countdown display with circular progress overlay
 
+🎯 **Auto-Accept System**
+* Automatic match acceptance via console monitoring and screen detection
+
 ---
 
 ## 🛠️ **Technical Architecture**
 
 ```
 artanis-rcs/
-├── main.py                          # Application entry point with GSI integration
+├── main.py                          # Application entry point with GSI integration and service orchestration
 ├── config.json                      # Main configuration file
 ├── requirements.txt                 # Python dependencies
 ├── start.bat                        # Windows startup script with dependency management
 ├── core/                            # Core system components
 │   ├── models/                      # Data models and structures
-│   │   ├── player_state.py          # Game state representation
-│   │   ├── weapon.py                # Weapon data model
-│   │   └── recoil_data.py           # Recoil pattern data structure
+│   │   ├── player_state.py          # Game state representation and player data
+│   │   ├── weapon.py                # Weapon data model and properties
+│   │   ├── recoil_data.py           # Recoil pattern data structure and management
+│   │   └── __init__.py              # Models package initialization
 │   └── services/                    # Business logic services
-│       ├── config_service.py        # Configuration management
-│       ├── recoil_service.py        # Core recoil compensation logic
-│       ├── gsi_service.py           # Game State Integration server
-│       ├── weapon_detection_service.py # Automatic weapon detection
-│       ├── input_service.py         # Mouse input control (SendInput API)
-│       ├── hotkey_service.py        # Global keyboard hotkey handling
-│       ├── tts_service.py           # Text-to-speech feedback system
-│       ├── bomb_timer_service.py    # Bomb countdown timer and defuse alerts
-│       └── timing_service.py        # Precise timing control
+│       ├── config_service.py        # Configuration management and validation
+│       ├── recoil_service.py        # Core recoil compensation logic and pattern execution
+│       ├── gsi_service.py           # Game State Integration server and CS2 communication
+│       ├── weapon_detection_service.py # Automatic weapon detection and switching logic
+│       ├── input_service.py         # Mouse input control (SendInput API) and cursor management
+│       ├── hotkey_service.py        # Global keyboard hotkey handling and system control
+│       ├── tts_service.py           # Text-to-speech feedback system and voice notifications
+│       ├── bomb_timer_service.py    # Bomb countdown timer, defuse alerts, and overlay management
+│       ├── timing_service.py        # Precise timing control and pattern synchronization
+│       ├── auto_accept_service.py   # Automatic match acceptance with multi-modal detection
+│       ├── console_log_service.py   # Real-time CS2 console log monitoring and parsing
+│       ├── screen_capture_service.py # Screen capture, color detection, and window management
+│       └── __init__.py              # Services package initialization
 ├── ui/                              # User interface components
 │   ├── views/                       # Main application views
-│   │   ├── main_window.py           # Primary application window
-│   │   ├── config_tab.py            # Configuration interface
-│   │   ├── visualization_tab.py     # Pattern visualization
-│   │   └── styles.py                # UI styling and themes
+│   │   ├── main_window.py           # Primary application window and tab management
+│   │   ├── config_tab.py            # Configuration interface and settings management
+│   │   ├── visualization_tab.py     # Pattern visualization and analysis tools
+│   │   └── __init__.py              # Views package initialization
 │   └── widgets/                     # Custom UI components
-│       ├── pattern_visualizer.py    # Recoil pattern display widget
-│       └── bomb_timer_overlay.py    # Bomb countdown overlay widget
+│       ├── pattern_visualizer.py    # Interactive recoil pattern display widget
+│       ├── bomb_timer_overlay.py    # Bomb countdown overlay widget with progress indicator
+│       └── __init__.py              # Widgets package initialization
 ├── patterns/                        # Recoil pattern data (CSV format)
-│   ├── ak47.csv                     # AK-47 spray pattern
-│   ├── m4a4.csv                     # M4A4 spray pattern
-│   ├── m4a1.csv                     # M4A1-S spray pattern
-│   └── [13 additional weapon patterns]
+│   ├── ak47.csv                     # AK-47 spray pattern data
+│   ├── m4a4.csv                     # M4A4 spray pattern data
+│   ├── m4a1.csv                     # M4A1-S spray pattern data
+│   └── [13 additional weapon patterns] # Complete weapon pattern library
 └── data/                            # Data repositories and persistence
-    └── config_repository.py         # Configuration file management and pattern data loading and parsing
+    ├── config_repository.py         # Configuration file management, pattern loading, and data persistence
+    └── __init__.py                  # Data package initialization
 ```
 
 ---
@@ -83,15 +93,18 @@ artanis-rcs/
 ## 🔧 **Installation & Setup**
 
 ### **System Requirements**
-- **Operating System**: Windows 10/11 (required for pywin32)
+- **Operating System**: Windows 10/11 (required for pywin32 and screen capture)
 - **Python**: Version 3.9 or higher
 - **Counter-Strike 2**: Latest version with GSI capability
+- **Permissions**: Administrator privileges for global hotkeys and input simulation
 
 ### **Dependencies**
-- **PyQt5**: Modern GUI framework
-- **matplotlib**: Pattern visualization and analysis
+- **PyQt5**: Modern GUI framework for user interface
+- **PyQtDarkTheme**: A flat dark theme for PySide and PyQt
+- **matplotlib**: Pattern visualization and mathematical plotting
 - **numpy**: Mathematical calculations and array operations
-- **pywin32**: Windows API integration for input simulation
+- **pywin32**: Windows API integration for input simulation and window management
+- **Pillow (PIL)**: Image processing for screen capture and analysis
 
 ### **Installation Steps**
 
@@ -106,17 +119,22 @@ artanis-rcs/
    pip install -r requirements.txt
    ```
 
-   Or use the provided batch script:
+   Or use the provided batch script for automated setup:
    ```bash
    start.bat
    ```
 
-3. **Launch the Application**
+3. **Ensure console debug logging is enabled in CS2**
+   ```bash
+   -conclearlog -condebug
+   ```
+
+4. **Launch the Application**
    ```bash
    python main.py
    ```
 
-   Or double-click `start.bat` for automated dependency management.
+   Or double-click `start.bat` for automated dependency management and startup.
 
 ---
 
@@ -153,49 +171,52 @@ The system includes precise recoil patterns for 16 automatic weapons:
 ```json
 "game_sensitivity": 1.08
 ```
-Set this to match your in-game sensitivity setting for accurate compensation.
 
 #### **Feature Toggles**
 ```json
 "features": {
-    "tts_enabled": true,         // Enable/disable audio feedback
-    "bomb_timer_enabled": true   // Enable/disable bomb timer overlay
+    "tts_enabled": true,                # Enable/disable audio feedback system
+    "bomb_timer_enabled": true,         # Enable/disable bomb timer overlay
+    "auto_accept_enabled": true         # Enable/disable automatic match acceptance
 }
 ```
 
 #### **GSI Configuration**
 ```json
 "gsi": {
-    "enabled": true,                    // Master GSI toggle
-    "auto_weapon_switch": true,         // Automatic weapon detection
-    "auto_rcs_control": true,           // Automatic RCS activation
-    "low_ammo_threshold": 5,            // Low ammo warning threshold
-    "server_host": "127.0.0.1",         // GSI server address
-    "server_port": 59873,               // GSI server port
-    "transition_delay": 0.2             // Weapon switch delay
+    "enabled": true,                    # Master GSI toggle
+    "auto_weapon_switch": true,         # Automatic weapon detection and switching
+    "auto_rcs_control": true,           # Automatic RCS activation based on game state
+    "low_ammo_threshold": 5,            # Low ammunition warning threshold
+    "server_host": "127.0.0.1",         # GSI server listening address
+    "server_port": 59873,               # GSI server port (must match CS2 config)
+    "transition_delay": 0.2             # Weapon switch transition delay (seconds)
 }
 ```
 
 #### **Hotkey Bindings**
 ```json
 "hotkeys": {
-    "exit": "END",                      // Emergency exit
-    "toggle_recoil": "INSERT",          // Toggle compensation on/off
-    "toggle_weapon_detection": "HOME"   // Toggle automatic detection
-    // Other weapons activation keys...
+    "exit": "END",                      # Emergency application exit
+    "toggle_recoil": "INSERT",          # Toggle recoil compensation on/off
+    "toggle_weapon_detection": "HOME",  # Toggle automatic weapon detection
+    // ... additional weapon bindings
+    "ak47": "F1",
+    "m4a4": "F2",
+    "m4a1": "F3"
 }
 ```
 
 #### **Weapon Parameters**
-Each weapon includes customizable parameters:
+Each weapon includes customizable compensation parameters:
 ```json
 {
-    "name": "ak47",              // Internal weapon identifier
-    "display_name": "AK-47",     // UI display name
-    "length": 30,                // Pattern length (bullets)
-    "multiple": 6,               // Compensation multiplier
-    "sleep_divider": 6,          // Timing divisor
-    "sleep_suber": -0.1          // Timing adjustment
+    "name": "ak47",              # Internal weapon identifier
+    "display_name": "AK-47",     # Human-readable weapon name
+    "length": 30,                # Recoil pattern length (bullets)
+    "multiple": 6,               # Compensation intensity multiplier
+    "sleep_divider": 6,          # Timing calculation divisor
+    "sleep_suber": -0.1          # Fine-tuning timing adjustment
 }
 ```
 
@@ -206,36 +227,46 @@ Each weapon includes customizable parameters:
 ### **Common Issues**
 
 #### **GSI Connection Problems**
-- Verify GSI configuration file exists in CS2 config directory
-- Check that CS2 is running and GSI is enabled
-- Confirm server port (59873) is not blocked by firewall
+- **Symptoms**: No automatic weapon detection, GSI status shows "Disconnected"
+- **Solutions**:
+  - Verify GSI configuration file exists in CS2 config directory `Counter-Strike Global Offensive/game/csgo/cfg/gamestate_integration_rcs`
+  - Confirm server port (59873) is not blocked by firewall
+  - Restart both CS2 and Artanis RCS after configuration changes
+
+#### **Auto-Accept Not Working**
+- **Symptoms**: Matches not being accepted automatically
+- **Solutions**:
+  - Verify CS2 console debug logging is enabled `-conclearlog -condebug`
+  - Check console log file path `Counter-Strike Global Offensive/game/csgo/console.log`
 
 #### **Hotkey Conflicts**
-- Check for conflicting applications using the same keys
-- Modify hotkey bindings in `config.json` or via the UI
-- Restart application after configuration changes
+- **Symptoms**: Hotkeys not responding or conflicting with other applications
+- **Solutions**:
+  - Check for conflicting applications using the same key combinations
+  - Modify hotkey bindings in `config.json` or via the Configuration tab
+  - Run application as Administrator for global hotkey access
+  - Restart application after configuration changes
 
 #### **TTS System Issues**
-- Verify Windows Speech Platform components
-- Test TTS by toggling `tts_enabled` setting or via the UI
+- **Symptoms**: No voice feedback or audio errors
+- **Solutions**:
+  - Verify Windows Speech Platform components are installed
+  - Check system audio settings and default playback device
+  - Restart Windows Speech Service if necessary
 
 #### **Sensitivity Calibration**
-- Match `game_sensitivity` exactly to CS2 setting
-- Adjust weapon-specific multipliers if needed
+- **Symptoms**: Recoil compensation too strong/weak or inaccurate
+- **Solutions**:
+  - Match `game_sensitivity` exactly to your CS2 in-game sensitivity
+  - Adjust weapon-specific `multiple` values for fine-tuning
 
-### **Log Files**
-- `recoil_system.log`: Main application log
-- `startup.log`: Startup script log (from start.bat)
+### **Log Files and Debugging**
+- **Logs**: `recoil_system.log` - Main application events and errors
+- **Debug Mode**: Enable verbose logging by setting `level=logging.DEBUG` in `main.py`
 
 ---
 
 ## 🤝 **Contributing**
-
-### **Code Style Standards**
-- Follow PEP 8 Python style guidelines
-- Use type hints for function parameters and returns
-- Maintain comprehensive docstrings
-- Include error handling for all external dependencies
 
 ### **Pull Request Process**
 1. Fork the repository
@@ -255,10 +286,6 @@ When reporting issues, please include:
 - CS2 game version
 - Complete error logs
 - Steps to reproduce the problem
-
-### **GSI Documentation**
-- [Valve Developer Community - Game State Integration](https://developer.valvesoftware.com/wiki/Counter-Strike:_Global_Offensive_Game_State_Integration)
-- [CS2 GSI Implementation](https://github.com/antonpup/CounterStrike2GSI)
 
 ---
 
