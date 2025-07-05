@@ -95,8 +95,6 @@ artanis-rcs/
 ### **System Requirements**
 - **Operating System**: Windows 10/11 (required for pywin32 and screen capture)
 - **Python**: Version 3.9 or higher
-- **Counter-Strike 2**: Latest version with GSI capability
-- **Permissions**: Administrator privileges for global hotkeys and input simulation
 
 ### **Dependencies**
 - **PyQt5**: Modern GUI framework for user interface
