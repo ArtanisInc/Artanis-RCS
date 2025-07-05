@@ -283,7 +283,6 @@ Each weapon includes customizable compensation parameters:
 When reporting issues, please include:
 - Operating system version
 - Python version
-- CS2 game version
 - Complete error logs
 - Steps to reproduce the problem
 
