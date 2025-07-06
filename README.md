@@ -30,7 +30,6 @@
 
 🔊 **Audio Feedback**
 * Text-to-speech (TTS) for system events
-* Voice alerts for critical events and weapon changes
 
 💣 **Bomb Timer System**
 * Real-time bomb countdown display with circular progress overlay
