@@ -360,7 +360,6 @@ class GSIService:
             weapons_data = player_data.get("weapons", {})
 
             # Extract bomb state
-            # Based on ErScripts: bomb state is in round.bomb, not bomb.state
             round_data = gsi_data.get("round", {})
             bomb_planted = round_data.get("bomb", "") == "planted"
 
@@ -369,7 +368,6 @@ class GSIService:
                 self.logger.debug(f"Round data received: {round_data}")
 
             # Check for defuse kit in player weapons
-            # Based on ErScripts: defuse kit is in player.state.defusekit
             state = player_data.get("state", {})
             has_defuse_kit = "defusekit" in state
 

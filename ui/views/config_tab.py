@@ -202,7 +202,8 @@ class HotkeysSection(ConfigSection):
     def _get_key_options(self) -> List[str]:
         """Get available key options."""
         return (["INSERT", "HOME", "DELETE", "END", "PGUP", "PGDN"] +
-                [f"F{i}" for i in range(1, 13)])
+                [f"F{i}" for i in range(1, 13)] +
+                [str(i) for i in range(10)])
 
     def _setup_ui(self):
         main_layout = QVBoxLayout(self.section)

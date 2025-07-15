@@ -6,7 +6,7 @@ import re
 import time
 import threading
 from pathlib import Path
-from typing import Optional, Callable, Dict
+from typing import Optional, Callable, Dict, Any
 
 
 class ConsoleLogMonitorService:
@@ -63,7 +63,7 @@ class ConsoleLogMonitorService:
 
         except Exception as e:
             self.logger.error(f"Error finding CS2 console.log: {e}")
-            return False
+        return False
 
 
     def start_monitoring(self) -> bool:
@@ -78,7 +78,12 @@ class ConsoleLogMonitorService:
 
         try:
             # Get current file size to start monitoring from end
-            self.last_position = self.console_log_path.stat().st_size
+            # Ensure console_log_path is not None before calling .stat()
+            if self.console_log_path:
+                self.last_position = self.console_log_path.stat().st_size
+            else:
+                self.logger.error("console_log_path is None, cannot get file size.")
+                return False
 
             self.monitoring_active = True
             self.monitoring_thread = threading.Thread(
@@ -119,7 +124,7 @@ class ConsoleLogMonitorService:
 
         while self.monitoring_active:
             try:
-                if not self.console_log_path.exists():
+                if not self.console_log_path or not self.console_log_path.exists():
                     self.logger.warning("Console log file no longer exists")
                     break
 
@@ -128,7 +133,7 @@ class ConsoleLogMonitorService:
 
                 if current_size > self.last_position:
                     # Read new content
-                    with open(self.console_log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    with open(str(self.console_log_path), 'r', encoding='utf-8', errors='ignore') as f:
                         f.seek(self.last_position)
                         new_content = f.read()
 
@@ -197,7 +202,6 @@ class ConsoleLogMonitorService:
         """Extract unique match identifier from console line."""
         try:
             # Extract match ID from patterns
-            import re
             match_id_pattern = re.search(r'\[A:1:(\d+):\d+\]', line)
             if match_id_pattern:
                 return match_id_pattern.group(1)
@@ -233,7 +237,7 @@ class ConsoleLogMonitorService:
             del self.callbacks[event_type]
             self.logger.debug(f"Callback unregistered for event: {event_type}")
 
-    def get_status(self) -> Dict[str, any]:
+    def get_status(self) -> Dict[str, Any]:
         """Get current monitoring status."""
         return {
             "monitoring_active": self.monitoring_active,
