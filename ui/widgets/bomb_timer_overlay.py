@@ -2,9 +2,10 @@
 Bomb Timer Overlay Widget for CS2 bomb countdown display.
 """
 import logging
+from typing import Optional
 from PyQt5.QtWidgets import QWidget, QApplication
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QPainter, QPen, QBrush, QFont, QColor, QFontMetrics
+from PyQt5.QtGui import QPainter, QPen, QBrush, QFont, QColor, QFontMetrics, QPaintEvent, QCloseEvent
 
 
 class BombTimerOverlay(QWidget):
@@ -61,19 +62,13 @@ class BombTimerOverlay(QWidget):
         # Set transparent background style
         self.setStyleSheet("background-color: transparent;")
 
-        # Remove window opacity if using translucent background
-        # self.setWindowOpacity(0.9)
-
         # Set initial position (top-right corner)
-        screen = QApplication.primaryScreen().geometry()
-        x_pos = screen.width() - self.widget_size - 50  # 50px from right edge
-        y_pos = 50  # 50px from top
-        self.move(x_pos, y_pos)
-
-        # Enable mouse events for dragging
-        self.setMouseTracking(True)
-        self.dragging = False
-        self.drag_start_position = None
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_geometry = screen.geometry()
+            x_pos = screen_geometry.width() - self.widget_size - 50  # 50px from right edge
+            y_pos = 50  # 50px from top
+            self.move(x_pos, y_pos)
 
     def _setup_timer(self):
         """Setup the update timer."""
@@ -101,7 +96,7 @@ class BombTimerOverlay(QWidget):
                 self.hide()
                 self.logger.debug("Bomb timer overlay hidden")
 
-    def paintEvent(self, event):
+    def paintEvent(self, a0: Optional[QPaintEvent]):
         """Paint the bomb timer overlay."""
         if not self.is_active or self.remaining_time <= 0:
             return
@@ -257,25 +252,6 @@ class BombTimerOverlay(QWidget):
             "D"
         )
 
-    def mousePressEvent(self, event):
-        """Handle mouse press for dragging."""
-        if event.button() == Qt.LeftButton:
-            self.dragging = True
-            self.drag_start_position = event.globalPos() - self.frameGeometry().topLeft()
-            event.accept()
-
-    def mouseMoveEvent(self, event):
-        """Handle mouse move for dragging."""
-        if event.buttons() == Qt.LeftButton and self.dragging:
-            self.move(event.globalPos() - self.drag_start_position)
-            event.accept()
-
-    def mouseReleaseEvent(self, event):
-        """Handle mouse release."""
-        if event.button() == Qt.LeftButton:
-            self.dragging = False
-            event.accept()
-
     def set_position(self, x: int, y: int):
         """Set overlay position."""
         self.move(x, y)
@@ -306,8 +282,9 @@ class BombTimerOverlay(QWidget):
         self.is_active = False
         self.hide()
 
-    def closeEvent(self, event):
+    def closeEvent(self, a0: Optional[QCloseEvent]):
         """Handle close event."""
         if hasattr(self, 'update_timer'):
             self.update_timer.stop()
-        event.accept()
+        if a0:
+            a0.accept()
