@@ -792,15 +792,15 @@ class ConfigTab(QWidget):
 
             if success:
                 QMessageBox.information(
-                    self, "✅ Success", "Hotkeys configuration saved successfully")
+                    self, "Success", "Hotkeys configuration saved successfully")
                 self.settings_saved.emit()
                 self.hotkeys_updated.emit()
             else:
-                QMessageBox.warning(self, "⚠️ Warning", "Save failed")
+                QMessageBox.warning(self, "Warning", "Save failed")
 
         except Exception as e:
             self.logger.error("Hotkeys save failed: %s", e)
-            QMessageBox.critical(self, "❌ Error", f"Save error: {e}")
+            QMessageBox.critical(self, "Error", f"Save error: {e}")
 
     def get_selected_weapon(self) -> str:
         """Get currently selected weapon name."""

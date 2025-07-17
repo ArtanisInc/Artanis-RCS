@@ -31,15 +31,9 @@ def setup_dark_theme(app: QApplication, theme: str = "dark") -> bool:
         bool: True if theme was applied successfully
     """
     try:
-        # Try new API first (PyQtDarkTheme 2.x)
-        if hasattr(qdarktheme, 'setup_theme'):
-            qdarktheme.setup_theme(theme)
-            return True
-        # Fall back to old API (PyQtDarkTheme 1.x and earlier)
-        elif hasattr(qdarktheme, 'load_stylesheet'):
-            # Old API only supports "dark" and "light", not "auto"
+        if hasattr(qdarktheme, 'load_stylesheet'):
             if theme == "auto":
-                theme = "dark"  # Default to dark for auto mode
+                theme = "dark"
             app.setStyleSheet(qdarktheme.load_stylesheet(theme))
             return True
         else:
@@ -317,7 +311,7 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
                                       .get_weapon_display_name(weapon_name))
                     clean_name = weapon_display.replace(
                         "-", " ").replace("_", " ")
-                    tts_service.speak_interrupt_previous(clean_name)
+                    tts_service.speak(clean_name)
 
                 logger.debug("Weapon selected via hotkey: %s", weapon_name)
             else:

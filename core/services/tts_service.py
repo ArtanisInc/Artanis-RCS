@@ -137,10 +137,6 @@ class TTSService:
             self.logger.error("Failed to speak message: %s", e)
             return False
 
-    def speak_interrupt_previous(self, message: str) -> bool:
-        """Interrupt current speech and speak new message (same as speak with purge)."""
-        return self.speak(message)
-
     def clear_queue(self) -> None:
         """Clear any pending speech (stop current speech)."""
         if not self.enabled or not self.voice:
