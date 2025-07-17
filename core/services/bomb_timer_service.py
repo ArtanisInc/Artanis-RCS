@@ -184,17 +184,7 @@ class BombTimerService(QObject):
         """Check if bomb timer is currently active."""
         return self.bomb_timer_active
 
-    def get_status(self) -> dict:
-        """Get current bomb timer status."""
-        return {
-            "active": self.bomb_timer_active,
-            "remaining_time": self.get_remaining_time(),
-            "has_defuse_kit": self.has_defuse_kit,
-            "can_defuse": self.can_defuse(),
-            "defuse_time_needed": self.get_defuse_time_needed(),
-            "bomb_defused": self.bomb_defused,
-            "bomb_exploded": self.bomb_exploded
-        }
+
 
     def stop(self) -> None:
         """Stop the bomb timer service."""

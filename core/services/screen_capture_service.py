@@ -290,30 +290,3 @@ class ScreenCaptureService:
         except Exception as e:
             self.logger.error(f"Error verifying Accept button color: {e}")
             return False
-
-    def get_status(self) -> dict:
-        """Gets current service status, including cache and window information."""
-        cs2_window_info = self.get_window_info()
-        cache_hit_ratio = (self.cache_hits / max(1, self.capture_count)) * 100
-
-        return {
-            "dxcam_enabled": True,
-            "camera_initialized": self.camera is not None,
-            "cache_entries": len(self.frame_cache),
-            "capture_count": self.capture_count,
-            "cache_hits": self.cache_hits,
-            "cache_hit_ratio": f"{cache_hit_ratio:.1f}%",
-            "cs2_window_found": cs2_window_info is not None,
-            "cs2_window_info": cs2_window_info,
-            "cs2_window_foreground": self.is_window_foreground(),
-            "service_ready": True
-        }
-
-    def __del__(self):
-        """Cleans up DXcam resources when the object is destroyed."""
-        if hasattr(self, 'camera') and self.camera:
-            try:
-                self.camera.release()
-                self.logger.info(f"DXcam released. Stats - Captures: {getattr(self, 'capture_count', 0)}, Cache hits: {getattr(self, 'cache_hits', 0)}")
-            except Exception:
-                pass

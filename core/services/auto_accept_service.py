@@ -357,21 +357,7 @@ class AutoAcceptService(QObject):
         """Check if currently accepting a match."""
         return self.accepting_in_progress
 
-    def get_status(self) -> Dict[str, Any]:
-        """Get current service status."""
-        console_status = self.console_monitor.get_status()
-        screen_status = self.screen_capture.get_status()
 
-        return {
-            "enabled": self.enabled,
-            "accepting_in_progress": self.accepting_in_progress,
-            "waiting_time": self.waiting_time,
-            "target_color": self.target_color,
-            "color_tolerance": self.color_tolerance,
-            "cs2_window_foreground": self.screen_capture.is_window_foreground(),
-            "console_monitor": console_status,
-            "screen_capture": screen_status
-        }
 
     def update_config(self, config: Dict[str, Any]):
         """Update Auto Accept configuration."""

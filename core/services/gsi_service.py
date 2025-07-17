@@ -7,9 +7,11 @@ import re
 import threading
 import time
 import winreg
+import hashlib
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from concurrent.futures import ThreadPoolExecutor
 
 from core.models.player_state import PlayerState
 
@@ -25,12 +27,6 @@ class GSIConfigService:
     def generate_config_file(self, gsi_config: Dict[str, Any]) -> bool:
         """
         Generate GSI configuration file if it doesn't exist.
-
-        Args:
-            gsi_config: GSI configuration from main config
-
-        Returns:
-            bool: True if file exists or was created successfully
         """
         try:
             cs2_config_path = self._find_cs2_config_directory()
@@ -45,7 +41,6 @@ class GSIConfigService:
                 self.logger.debug("GSI config file already exists: %s", config_file_path)
                 return True
 
-            # Generate and write the config file
             config_content = self._generate_config_content(gsi_config)
 
             with open(config_file_path, 'w', encoding='utf-8') as f:
@@ -67,7 +62,6 @@ class GSIConfigService:
                 if not steam_path.exists():
                     continue
 
-                # CS2 is installed in Counter-Strike Global Offensive folder
                 cs2_config_path = steam_path / "steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg"
 
                 if cs2_config_path.exists():
@@ -85,10 +79,9 @@ class GSIConfigService:
         steam_paths = []
         main_steam_path = None
 
-        # Try registry paths for main Steam installation
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                              r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
+                                r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
                 install_path = winreg.QueryValueEx(key, "InstallPath")[0]
                 main_steam_path = Path(install_path)
                 steam_paths.append(main_steam_path)
@@ -97,14 +90,13 @@ class GSIConfigService:
 
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                              r"SOFTWARE\Valve\Steam") as key:
+                                r"SOFTWARE\Valve\Steam") as key:
                 install_path = winreg.QueryValueEx(key, "SteamPath")[0]
                 main_steam_path = Path(install_path)
                 steam_paths.append(main_steam_path)
         except (WindowsError, FileNotFoundError):
             pass
 
-        # Parse libraryfolders.vdf to find additional Steam library locations
         if main_steam_path:
             library_paths = self._parse_libraryfolders_vdf(main_steam_path)
             for lib_path in library_paths:
@@ -128,13 +120,10 @@ class GSIConfigService:
             with open(vdf_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
 
-            # Parse VDF content using regex to find "path" entries
-            # VDF format: "path"    "C:\\path\\to\\library"
             path_pattern = r'"path"\s+"([^"]+)"'
             matches = re.findall(path_pattern, content, re.IGNORECASE)
 
             for match in matches:
-                # Convert escaped backslashes and normalize path
                 library_path = Path(match.replace('\\\\', '\\'))
 
                 if library_path.exists():
@@ -156,29 +145,29 @@ class GSIConfigService:
 
         return f'''"Artanis RCS Integration"
 {{
-    "uri"                    "{uri}"
-    "timeout"                "5.0"
-    "buffer"                 "0.0"
-    "throttle"               "0.1"
-    "heartbeat"              "10.0"
+    "uri"                   "{uri}"
+    "timeout"               "5.0"
+    "buffer"                "0.0"
+    "throttle"              "0.1"
+    "heartbeat"             "10.0"
     "data"
     {{
-        "provider"                 "1"      // Game version info
-        "map"                      "1"      // Map information
-        "round"                    "1"      // Round information
-        "player_id"                "1"      // Player identification
-        "player_state"             "1"      // Health, armor, flashing, etc.
-        "player_weapons"           "1"      // Weapon information (CRITICAL)
-        "player_match_stats"       "1"      // Match statistics
-        "allplayers_id"            "0"      // Other players (not needed)
-        "allplayers_state"         "0"      // Other players state (not needed)
-        "allplayers_weapons"       "0"      // Other players weapons (not needed)
-        "allplayers_match_stats"   "0"      // Other players stats (not needed)
-        "allplayers_position"      "0"      // Other players position (not needed)
-        "allgrenades"              "0"      // Grenade information (not needed)
-        "bomb"                     "1"      // Bomb information (NEEDED for timer)
-        "phase_countdowns"         "1"      // Phase countdowns (NEEDED for timer)
-        "player_position"          "0"      // Player position (not needed)
+        "provider"              "1"
+        "map"                   "1"
+        "round"                 "1"
+        "player_id"             "1"
+        "player_state"          "1"
+        "player_weapons"        "1"
+        "player_match_stats"    "1"
+        "allplayers_id"         "0"
+        "allplayers_state"      "0"
+        "allplayers_weapons"    "0"
+        "allplayers_match_stats" "0"
+        "allplayers_position"   "0"
+        "allgrenades"           "0"
+        "bomb"                  "1"
+        "phase_countdowns"      "1"
+        "player_position"       "0"
     }}
 }}'''
 
@@ -209,7 +198,7 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
 
-            self.gsi_service._process_gsi_data(gsi_data)
+            self.gsi_service._submit_gsi_data(gsi_data)
 
             self.send_response(200)
             self.send_header('Content-type', 'text/plain')
@@ -245,10 +234,20 @@ class GSIService:
         self.current_player_state: Optional[PlayerState] = None
         self.connection_status = "Disconnected"
 
-        # Initialize GSI config service
+        self._payload_cache: Dict[str, Any] = {}
+        self._last_payload_hash: Optional[str] = None
+        self._processed_count = 0
+        self._cache_hits = 0
+        self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="GSI")
+
+        self._tracked_fields = {
+            'activity', 'health', 'armor', 'flashing', 'burning',
+            'active_weapon_name', 'active_weapon_ammo', 'bomb_planted', 'has_defuse_kit'
+        }
+        self._last_field_values: Dict[str, Any] = {}
+
         self.config_service = GSIConfigService()
 
-        # Auto-generate GSI config file if enabled
         config_status = "existing"
         if auto_generate_config and gsi_config:
             config_generated = self.config_service.generate_config_file(gsi_config)
@@ -302,6 +301,8 @@ class GSIService:
             if self.server_thread and self.server_thread.is_alive():
                 self.server_thread.join(timeout=2.0)
 
+            self._executor.shutdown(wait=True)
+
             self.is_running = False
             self.connection_status = "Stopped"
 
@@ -326,30 +327,90 @@ class GSIService:
             self.is_running = False
             self.connection_status = "Disconnected"
 
+    def _submit_gsi_data(self, gsi_data: Dict[str, Any]) -> None:
+        """Submit GSI data for async processing."""
+        try:
+            payload_str = json.dumps(gsi_data, sort_keys=True)
+            payload_hash = hashlib.md5(payload_str.encode()).hexdigest()
+
+            if payload_hash == self._last_payload_hash:
+                self._cache_hits += 1
+                return
+
+            self._last_payload_hash = payload_hash
+
+            self._executor.submit(self._process_gsi_data, gsi_data)
+
+        except Exception as e:
+            self.logger.error("GSI data submission error: %s", e)
+
     def _process_gsi_data(self, gsi_data: Dict[str, Any]) -> None:
-        """Process incoming GSI data."""
+        """Process incoming GSI data with change detection."""
         try:
             self.connection_status = "Connected"
             self.last_update_time = time.time()
+            self._processed_count += 1
 
             player_state = self._extract_player_state(gsi_data)
 
             if player_state:
-                self.current_player_state = player_state
+                current_fields = self._extract_tracked_fields(player_state)
 
-                for callback_name, callback in self.update_callbacks.items():
-                    try:
-                        callback(player_state)
-                    except Exception as e:
-                        self.logger.error(
-                            "Callback '%s' error: %s", callback_name, e)
+                if self._has_significant_changes(current_fields):
+                    self.current_player_state = player_state
+                    self._last_field_values = current_fields
+
+                    self._execute_callbacks_async(player_state)
+                else:
+                    if self.current_player_state:
+                        self.current_player_state.timestamp = player_state.timestamp
 
         except Exception as e:
             self.logger.error("GSI data processing error: %s", e)
 
+    def _extract_tracked_fields(self, player_state: PlayerState) -> Dict[str, Any]:
+        """Extract fields we want to track for changes."""
+        return {
+            'activity': player_state.activity,
+            'health': player_state.health,
+            'armor': player_state.armor,
+            'flashing': player_state.flashing,
+            'burning': player_state.burning,
+            'active_weapon_name': player_state.active_weapon.name if player_state.active_weapon else None,
+            'active_weapon_ammo': player_state.active_weapon.ammo_clip if player_state.active_weapon else 0,
+            'bomb_planted': player_state.bomb_planted,
+            'has_defuse_kit': player_state.has_defuse_kit
+        }
+
+    def _has_significant_changes(self, current_fields: Dict[str, Any]) -> bool:
+        """Check if there are significant changes worth processing."""
+        if not self._last_field_values:
+            return True
+
+        for field, value in current_fields.items():
+            if self._last_field_values.get(field) != value:
+                return True
+
+        return False
+
+    def _execute_callbacks_async(self, player_state: PlayerState) -> None:
+        """Execute callbacks asynchronously to avoid blocking."""
+        for callback_name, callback in self.update_callbacks.items():
+            try:
+                self._executor.submit(self._safe_callback_execution, callback_name, callback, player_state)
+            except Exception as e:
+                self.logger.error("Callback submission error for '%s': %s", callback_name, e)
+
+    def _safe_callback_execution(self, callback_name: str, callback: Callable, player_state: PlayerState) -> None:
+        """Safely execute a callback with error handling."""
+        try:
+            callback(player_state)
+        except Exception as e:
+            self.logger.error("Callback '%s' execution error: %s", callback_name, e)
+
     def _extract_player_state(
             self, gsi_data: Dict[str, Any]) -> Optional[PlayerState]:
-        """Extract player state from GSI data."""
+        """Extract player state from GSI data with caching."""
         try:
             player_data = gsi_data.get("player", {})
             if not player_data:
@@ -363,12 +424,6 @@ class GSIService:
             round_data = gsi_data.get("round", {})
             bomb_planted = round_data.get("bomb", "") == "planted"
 
-            # Debug bomb data
-            if round_data:
-                self.logger.debug(f"Round data received: {round_data}")
-
-            # Check for defuse kit in player weapons
-            state = player_data.get("state", {})
             has_defuse_kit = "defusekit" in state
 
             weapons = self._extract_weapons(weapons_data)
@@ -435,14 +490,9 @@ class GSIService:
             self.logger.debug("Callback unregistered: %s", name)
 
     def get_connection_status(self) -> Dict[str, Any]:
-        """Get connection status information."""
+        """Get connection status information"""
+
         return {
             "status": self.connection_status,
             "is_running": self.is_running,
-            "endpoint": f"http://{self.host}:{self.port}",
-            "last_update": self.last_update_time,
-            "time_since_update": (time.time() - self.last_update_time
-                                  if self.last_update_time > 0 else None),
-            "registered_callbacks": len(self.update_callbacks),
-            "current_state_available": self.current_player_state is not None
         }
