@@ -179,15 +179,9 @@ class WeaponDetectionService:
                 if success:
                     # Only log weapon switches, not reconfirmations
                     if new_weapon != self.detection_state.previous_weapon:
-                        self.logger.info("Auto-switched to weapon: %s", new_weapon)
+                        self.logger.debug("Auto-switched to weapon: %s", new_weapon)
                     else:
                         self.logger.debug("Weapon reconfirmed: %s", new_weapon)
-
-                    # Silent weapon change - no TTS announcement
-                    # The TTS suppression is handled by
-                    # RecoilService._should_announce_weapon()
-                    self.logger.debug(
-                        "Weapon change completed silently via GSI detection")
                 else:
                     self.logger.warning("Failed to switch to: %s", new_weapon)
             else:

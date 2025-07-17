@@ -266,10 +266,10 @@ class RecoilService:
 
                 # Log weapon changes
                 if self._last_weapon_for_compensation != weapon.name:
-                    self.logger.info(
+                    self.logger.debug(
                         "Weapon change during compensation: %s -> %s",
                         self._last_weapon_for_compensation, weapon.name)
-                    self.logger.info("New pattern: %s points", len(pattern))
+                    self.logger.debug("New pattern: %s points", len(pattern))
                     self._last_weapon_for_compensation = weapon.name
 
                 self.weapon_change_event.clear()
