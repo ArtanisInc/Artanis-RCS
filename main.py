@@ -215,7 +215,7 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
             window.set_auto_accept_service(auto_accept_service)
 
         setup_hotkey_callbacks(window, recoil_service, hotkey_service,
-                               tts_service, weapon_detection_service, auto_accept_service)
+                               tts_service, weapon_detection_service)
 
         logger.info("GUI initialized: Main window, Config tab, Visualization tab")
         return window
@@ -285,29 +285,6 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
 
         except Exception as e:
             logger.error("Toggle weapon detection error: %s", e)
-
-    def toggle_auto_accept_action():
-        """Toggle Auto Accept feature."""
-        try:
-            if auto_accept_service:
-                if auto_accept_service.is_enabled():
-                    success = auto_accept_service.disable()
-                    status_text = "disabled" if success else "disable failed"
-                else:
-                    success = auto_accept_service.enable()
-                    status_text = "enabled" if success else "enable failed"
-
-                logger.debug("Auto Accept %s via hotkey", status_text)
-
-                if success:
-                    logger.info("Auto Accept %s", status_text)
-                else:
-                    logger.error("Failed to toggle Auto Accept")
-            else:
-                logger.warning("Auto Accept service not available")
-
-        except Exception as e:
-            logger.error("Toggle Auto Accept error: %s", e)
 
     def exit_action():
         """Exit application."""
