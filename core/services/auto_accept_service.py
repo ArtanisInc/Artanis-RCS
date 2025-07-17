@@ -99,7 +99,7 @@ class AutoAcceptService(QObject):
             self.console_monitor.gsi_service = gsi_service
             # Re-initialize console log path detection with GSI service
             result = self.console_monitor._find_cs2_console_log()
-            self.logger.debug(f"Console log re-detection result: {result}")
+            self.logger.debug(f"Console log detection result: {result}")
             if result:
                 self.logger.debug(f"Console log path: {self.console_monitor.console_log_path}")
             else:

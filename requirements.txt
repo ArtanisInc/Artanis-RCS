@@ -2,5 +2,5 @@ PyQt5
 matplotlib
 numpy
 pywin32
-Pillow
 pyqtdarktheme
+dxcam
