@@ -201,7 +201,7 @@ class HotkeysSection(ConfigSection):
 
     def _get_key_options(self) -> List[str]:
         """Get available key options."""
-        return (["INSERT", "HOME", "DELETE", "END", "PGUP", "PGDN"] +
+        return (["INSERT", "HOME", "DELETE", "END", "PGUP", "PGDN", "XBUTTON1", "XBUTTON2"] +
                 [f"F{i}" for i in range(1, 13)] +
                 [str(i) for i in range(10)])
 
