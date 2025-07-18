@@ -11,8 +11,7 @@
         "auto_rcs_control": true,
         "low_ammo_threshold": 5,
         "server_host": "127.0.0.1",
-        "server_port": 59873,
-        "transition_delay": 0.2
+        "server_port": 59873
     },
     "hotkeys": {
         "exit": "END",

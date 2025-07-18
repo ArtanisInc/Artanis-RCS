@@ -184,8 +184,6 @@ class BombTimerService(QObject):
         """Check if bomb timer is currently active."""
         return self.bomb_timer_active
 
-
-
     def stop(self) -> None:
         """Stop the bomb timer service."""
         if self.bomb_timer_active:

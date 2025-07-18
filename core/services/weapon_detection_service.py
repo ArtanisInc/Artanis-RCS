@@ -64,16 +64,6 @@ class WeaponDetectionService:
         self.auto_weapon_switch = True
         self.auto_rcs_control = True
         self.low_ammo_threshold = 5
-        self.min_transition_delay = 0.2
-
-        self.statistics = {
-            "total_updates": 0,
-            "weapon_switches": 0,
-            "rcs_activations": 0,
-            "rcs_deactivations": 0,
-            "ammo_warnings": 0,
-            "last_activity": 0.0
-        }
 
         self.logger.debug("Weapon detection service initialized")
 
@@ -138,13 +128,7 @@ class WeaponDetectionService:
         try:
             current_time = time.time()
 
-            if (current_time - self.detection_state.last_update_time <
-                    self.min_transition_delay):
-                return
-
             self.detection_state.last_update_time = current_time
-            self.statistics["total_updates"] += 1
-            self.statistics["last_activity"] = current_time
 
             self._process_weapon_changes(player_state)
             self._process_rcs_control(player_state, current_time)
@@ -172,8 +156,6 @@ class WeaponDetectionService:
                               weapon_state: Optional[WeaponState]) -> None:
         """Handle weapon change event with silent operation."""
         try:
-            self.statistics["weapon_switches"] += 1
-
             if new_weapon:
                 success = self.recoil_service.set_weapon(new_weapon)
                 if success:
@@ -206,7 +188,6 @@ class WeaponDetectionService:
                         allow_manual_when_auto_enabled=True)
                     if success:
                         self.detection_state.rcs_was_auto_enabled = True
-                        self.statistics["rcs_activations"] += 1
                         self.logger.debug("RCS auto-enabled by GSI detection")
 
             elif (not should_enable_rcs and rcs_currently_active and
@@ -214,7 +195,6 @@ class WeaponDetectionService:
                 success = self.recoil_service.stop_compensation()
                 if success:
                     self.detection_state.rcs_was_auto_enabled = False
-                    self.statistics["rcs_deactivations"] += 1
                     self.logger.debug("RCS auto-disabled")
 
         except Exception as e:
@@ -242,7 +222,6 @@ class WeaponDetectionService:
     def _handle_low_ammo_warning(self, weapon: WeaponState) -> None:
         """Handle low ammunition warning silently."""
         try:
-            self.statistics["ammo_warnings"] += 1
             self.logger.debug(
                 "Low ammo detected: %s (%s)",
                 weapon.name, weapon.ammo_clip)
@@ -269,8 +248,6 @@ class WeaponDetectionService:
                                                self.auto_rcs_control)
             self.low_ammo_threshold = config.get("low_ammo_threshold",
                                                  self.low_ammo_threshold)
-            self.min_transition_delay = config.get("transition_delay",
-                                                   self.min_transition_delay)
 
             self.logger.debug("Configuration updated")
             return True
@@ -280,29 +257,10 @@ class WeaponDetectionService:
             return False
 
     def get_status(self) -> Dict[str, Any]:
-        """Get comprehensive status information."""
+        """Get status information"""
         return {
             "enabled": self.enabled,
             "current_state": {
-                "weapon": self.detection_state.current_weapon,
-                "previous_weapon": self.detection_state.previous_weapon,
-                "rcs_auto_enabled": self.detection_state.rcs_was_auto_enabled,
-                "last_ammo": self.detection_state.last_ammo_count,
-                "weapon_changes": self.detection_state.weapon_change_count
-            },
-            "configuration": {
-                "auto_weapon_switch": self.auto_weapon_switch,
-                "auto_rcs_control": self.auto_rcs_control,
-                "low_ammo_threshold": self.low_ammo_threshold,
-                "min_transition_delay": self.min_transition_delay
-            },
-            "timing": {
-                "startup_time": self.startup_time,
-                "auto_activation_allowed": True
-            },
-            "statistics": self.statistics.copy(),
-            "recoil_service": {
-                "active": self.recoil_service.active,
-                "current_weapon": self.recoil_service.current_weapon
+                "weapon": self.detection_state.current_weapon
             }
         }
