@@ -107,10 +107,6 @@ class KeyMapping:
         for i in range(ord('A'), ord('Z') + 1):
             mappings[chr(i)] = i
 
-        # Add digits
-        for i in range(ord('0'), ord('9') + 1):
-            mappings[str(i)] = i
-
         return mappings
 
 
