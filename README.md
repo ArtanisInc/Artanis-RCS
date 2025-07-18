@@ -101,7 +101,7 @@ artanis-rcs/
 - **matplotlib**: Pattern visualization and mathematical plotting
 - **numpy**: Mathematical calculations and array operations
 - **pywin32**: Windows API integration for input simulation and window management
-- **Pillow (PIL)**: Image processing for screen capture and analysis
+- **DXcam**: Image processing for screen capture and analysis
 
 ### **Installation Steps**
 
