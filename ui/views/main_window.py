@@ -343,6 +343,9 @@ class MainWindow(QMainWindow):
                 weapon_combo.setCurrentIndex(index)
                 weapon_combo.blockSignals(False)
 
+                # Manually update compensation parameters since signals were blocked
+                self.config_tab._on_weapon_changed(index)
+
                 # Mettre à jour la visualisation
                 self.visualization_tab.update_weapon_visualization(weapon_name)
 
