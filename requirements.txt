@@ -4,4 +4,3 @@ numpy
 pywin32
 pyqtdarktheme
 dxcam
-watchdog
