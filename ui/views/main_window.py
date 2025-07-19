@@ -14,7 +14,6 @@ from PyQt5.QtGui import QCloseEvent, QFont
 
 from core.services.recoil_service import RecoilService
 from core.services.config_service import ConfigService
-from core.services.weapon_state_service import WeaponStateService
 from ui.views.config_tab import ConfigTab
 from ui.views.visualization_tab import VisualizationTab
 from ui.widgets.bomb_timer_overlay import BombTimerOverlay
@@ -164,8 +163,9 @@ class MainWindow(QMainWindow):
         self.recoil_service = recoil_service
         self.config_service = config_service
 
-        # Initialize weapon state service
-        self.weapon_state_service = WeaponStateService()
+        # Simple flags for preventing signal loops (replaces WeaponStateService)
+        self._updating_from_gsi = False
+        self._updating_ui_only = False
 
         # Service references
         self.hotkey_service = None
@@ -264,7 +264,7 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setTabPosition(QTabWidget.North)
 
-        self.config_tab = ConfigTab(self.config_service, self.weapon_state_service)
+        self.config_tab = ConfigTab(self.config_service)
         self.visualization_tab = VisualizationTab(self.config_service)
 
         self.tabs.addTab(self.config_tab, "⚙️ Configuration")
@@ -281,15 +281,34 @@ class MainWindow(QMainWindow):
         self.control_panel.start_button.clicked.connect(self._start_compensation)
         self.control_panel.stop_button.clicked.connect(self._stop_compensation)
 
-        # Weapon state service connections
-        self.weapon_state_service.weapon_changed.connect(self._on_weapon_state_changed)
-        self.weapon_state_service.weapon_ui_sync_requested.connect(self._sync_weapon_ui)
-
         # Configuration tab connections
-        self.config_tab.weapon_changed.connect(self._on_config_weapon_changed)
+        self.config_tab.weapon_changed.connect(self._on_weapon_changed)
         self.config_tab.settings_saved.connect(self._on_settings_saved)
         self.config_tab.hotkeys_updated.connect(self._on_hotkeys_updated)
         self.tabs.currentChanged.connect(self._on_tab_changed)
+
+    def _on_weapon_changed(self, weapon_name: str):
+        """Handle weapon selection change event from config tab."""
+        # Skip processing if currently updating from GSI
+        if self._updating_from_gsi:
+            self.logger.debug("Skipping weapon change during GSI update")
+            return
+
+        try:
+            # Update recoil service if weapon changed
+            if self.recoil_service.current_weapon != weapon_name:
+                self.recoil_service.set_weapon(weapon_name)
+
+            # Update visualization
+            if weapon_name:
+                self.visualization_tab.update_weapon_visualization(weapon_name)
+            else:
+                self.visualization_tab.update_weapon_visualization(None)
+
+            self.logger.debug(f"Weapon changed from user: {weapon_name}")
+
+        except Exception as e:
+            self.logger.error(f"Weapon change handling error: {e}")
 
     def _start_compensation(self):
         """Start recoil compensation with validation and error handling."""
@@ -338,24 +357,65 @@ class MainWindow(QMainWindow):
     def sync_ui_with_gsi_weapon(self, weapon_name: str) -> None:
         """Synchronize UI weapon selection with GSI detected weapon."""
         try:
-            if not self.weapon_state_service.should_process_gsi_change():
+            if self._updating_ui_only:
                 self.logger.debug("Skipping GSI weapon sync during UI update")
                 return
 
-            # Use weapon state service to handle GSI weapon changes
-            self.weapon_state_service.set_weapon_from_gsi(weapon_name)
+            self._updating_from_gsi = True
+
+            weapon_combo = self.config_tab.global_weapon_section.weapon_combo
+
+            if not weapon_name:
+                # Clear selection and parameters
+                weapon_combo.setCurrentIndex(0)
+                self.config_tab.params_section.param_controls['multiple'].setValue(0)
+                self.config_tab.params_section.param_controls['sleep_divider'].setValue(1.0)
+                self.config_tab.params_section.param_controls['sleep_suber'].setValue(0.0)
+                self.visualization_tab._clear_visualization()
+                self.logger.debug("UI weapon selection cleared from GSI")
+            else:
+                index = weapon_combo.findData(weapon_name)
+                if index >= 0:
+                    # Update combo box
+                    weapon_combo.setCurrentIndex(index)
+
+                    # Update weapon parameters directly
+                    weapon = self.config_service.get_weapon_profile(weapon_name)
+                    if weapon:
+                        self.config_tab.params_section.param_controls['multiple'].setValue(weapon.multiple)
+                        self.config_tab.params_section.param_controls['sleep_divider'].setValue(weapon.sleep_divider)
+                        self.config_tab.params_section.param_controls['sleep_suber'].setValue(weapon.sleep_suber)
+
+                    # Update visualization
+                    self.visualization_tab.update_weapon_visualization(weapon_name)
+
+                    self.logger.debug(f"UI synchronized with GSI weapon: {weapon_name}")
+                else:
+                    self.logger.warning(f"GSI weapon not found in UI combo: {weapon_name}")
 
         except Exception as e:
             self.logger.error(f"GSI weapon sync error: {e}")
+        finally:
+            self._updating_from_gsi = False
 
     def _clear_ui_weapon_selection(self) -> None:
         """Clear weapon selection in UI when transitioning to automatic mode."""
         try:
-            # Use weapon state service to clear selection
-            self.weapon_state_service.clear_weapon_selection()
+            self._updating_from_gsi = True
+
+            weapon_combo = self.config_tab.global_weapon_section.weapon_combo
+            weapon_combo.setCurrentIndex(0)
+            self.config_tab.params_section.param_controls['multiple'].setValue(0)
+            self.config_tab.params_section.param_controls['sleep_divider'].setValue(1.0)
+            self.config_tab.params_section.param_controls['sleep_suber'].setValue(0.0)
+            self.visualization_tab._clear_visualization()
+
+            self.logger.debug("UI weapon selection cleared for automatic mode")
 
         except Exception as e:
             self.logger.error(f"UI weapon selection clearing error: {e}")
+        finally:
+            self._updating_from_gsi = False
 
     def _sync_weapon_ui(self, weapon_name: str) -> None:
         """Synchronize UI elements with weapon state (no signal loops)."""
