@@ -8,7 +8,7 @@ import os
 from typing import Tuple
 
 from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QMetaType
 import qdarktheme
 
 from core.services.hotkey_service import HotkeyService, HotkeyAction
@@ -340,6 +340,9 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
 def main():
     """Main entry point."""
     logger = setup_logging()
+
+    # Register QItemSelection metatype to fix Qt signal/slot queuing issues
+    QMetaType.type("QItemSelection")
 
     try:
         app = QApplication(sys.argv)
