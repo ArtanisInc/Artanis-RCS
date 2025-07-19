@@ -187,7 +187,6 @@ The system includes precise recoil patterns for 16 automatic weapons:
     "low_ammo_threshold": 5,            # Low ammunition warning threshold
     "server_host": "127.0.0.1",         # GSI server listening address
     "server_port": 59873,               # GSI server port (must match CS2 config)
-    "transition_delay": 0.2             # Weapon switch transition delay (seconds)
 }
 ```
 
