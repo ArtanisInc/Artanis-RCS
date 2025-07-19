@@ -453,34 +453,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.logger.error(f"UI synchronization error: {e}")
 
-    def _on_weapon_state_changed(self, weapon_name: str, source: str) -> None:
-        """Handle weapon state changes from the weapon state service."""
-        try:
-            self.logger.debug(f"Weapon state changed: {weapon_name} (source: {source})")
-
-            # Update recoil service
-            if source in ["user", "gsi", "clear"]:
-                if self.recoil_service.current_weapon != weapon_name:
-                    self.recoil_service.set_weapon(weapon_name)
-
-            # Update visualization for all sources
-            if weapon_name:
-                self.visualization_tab.update_weapon_visualization(weapon_name)
-            else:
-                self.visualization_tab.update_weapon_visualization(None)
-
-        except Exception as e:
-            self.logger.error(f"Weapon state change handling error: {e}")
-
-    def _on_config_weapon_changed(self, weapon_name: str) -> None:
-        """Handle weapon changes from config tab (user selection)."""
-        try:
-            # Use weapon state service to handle user weapon changes
-            self.weapon_state_service.set_weapon_from_user(weapon_name)
-
-        except Exception as e:
-            self.logger.error(f"Config weapon change error: {e}")
-
     def _update_status(self, status: Dict[str, Any]):
         """Update RCS operational status display with GSI sync."""
         # Get status information
