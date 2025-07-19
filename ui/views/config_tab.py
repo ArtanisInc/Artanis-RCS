@@ -2,7 +2,10 @@
 Configuration tab for the user interface.
 """
 import logging
-from typing import Tuple, List
+from typing import Tuple, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from core.services.weapon_state_service import WeaponStateService
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -373,10 +376,11 @@ class ConfigTab(QWidget):
     settings_saved = pyqtSignal()
     hotkeys_updated = pyqtSignal()
 
-    def __init__(self, config_service: ConfigService):
+    def __init__(self, config_service: ConfigService, weapon_state_service: Optional['WeaponStateService'] = None):
         super().__init__()
         self.logger = logging.getLogger("ConfigTab")
         self.config_service = config_service
+        self.weapon_state_service = weapon_state_service
 
         # Create sections
         self.global_weapon_section = GlobalWeaponSection()
@@ -387,7 +391,6 @@ class ConfigTab(QWidget):
         self._setup_ui()
         self._setup_connections()
         self._load_data()
-
         self.logger.debug("Configuration tab initialized")
 
     def _setup_ui(self):
@@ -506,6 +509,11 @@ class ConfigTab(QWidget):
     def _on_weapon_changed(self, index):
         """Handle weapon selection change event."""
         if index < 0:
+            return
+
+        # Check if we should process this UI change
+        if self.weapon_state_service and not self.weapon_state_service.should_process_ui_change():
+            self.logger.debug("Skipping UI weapon change during GSI update")
             return
 
         weapon_name = self.global_weapon_section.weapon_combo.currentData()

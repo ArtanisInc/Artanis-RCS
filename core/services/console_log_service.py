@@ -6,21 +6,10 @@ import re
 import time
 import threading
 from pathlib import Path
-from typing import Optional, Callable, Dict, TYPE_CHECKING
+from typing import Optional, Callable, Dict
 
-if TYPE_CHECKING:
-    from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
-
-try:
-    from watchdog.observers import Observer
-    from watchdog.events import FileSystemEventHandler
-    WATCHDOG_AVAILABLE = True
-except ImportError:
-    WATCHDOG_AVAILABLE = False
-    Observer = None  # type: ignore
-    FileSystemEventHandler = object  # type: ignore
-    logging.warning("Watchdog not available, falling back to polling")
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
 
 
 class ConsoleLogFileHandler(FileSystemEventHandler):  # type: ignore
@@ -45,7 +34,7 @@ class ConsoleLogFileHandler(FileSystemEventHandler):  # type: ignore
 
 
 class ConsoleLogMonitorService:
-    """Optimized service for monitoring CS2 console.log file with file system watchers."""
+    """Service for monitoring CS2 console.log file."""
 
     def __init__(self, config_service=None, gsi_service=None):
         self.logger = logging.getLogger("ConsoleLogMonitorService")
@@ -56,7 +45,6 @@ class ConsoleLogMonitorService:
         self.monitoring_active = False
         self.observer = None
         self.file_handler: Optional[ConsoleLogFileHandler] = None
-        self.monitoring_thread: Optional[threading.Thread] = None
         self.last_position = 0
 
         self.callbacks: Dict[str, Callable] = {}
@@ -71,8 +59,6 @@ class ConsoleLogMonitorService:
         self.processed_matches = set()
         self.max_processed_matches = 20
 
-        self.last_file_check = 0
-        self.file_check_interval = 1.0
         self.processing_lock = threading.Lock()
 
         self.events_processed = 0
@@ -81,10 +67,7 @@ class ConsoleLogMonitorService:
 
         self._find_cs2_console_log()
 
-        if WATCHDOG_AVAILABLE:
-            self.logger.info("Console Log Monitor initialized with file system watchers")
-        else:
-            self.logger.info("Console Log Monitor initialized with optimized polling")
+        self.logger.info("Console Log Monitor initialized")
 
     def _find_cs2_console_log(self) -> bool:
         """Find CS2 console.log file path using GSI service paths."""
@@ -110,7 +93,7 @@ class ConsoleLogMonitorService:
         return False
 
     def start_monitoring(self) -> bool:
-        """Start optimized console log monitoring."""
+        """Start console log monitoring."""
         if self.monitoring_active:
             self.logger.warning("Console log monitoring already active")
             return True
@@ -122,23 +105,14 @@ class ConsoleLogMonitorService:
         try:
             self.last_position = self.console_log_path.stat().st_size
 
-            if WATCHDOG_AVAILABLE and Observer is not None:
-                self.observer = Observer()
-                self.file_handler = ConsoleLogFileHandler(self)
+            self.observer = Observer()
+            self.file_handler = ConsoleLogFileHandler(self)
 
-                watch_dir = self.console_log_path.parent
-                self.observer.schedule(self.file_handler, str(watch_dir), recursive=False)
+            watch_dir = self.console_log_path.parent
+            self.observer.schedule(self.file_handler, str(watch_dir), recursive=False)
 
-                self.observer.start()
-                self.logger.debug("Console log monitoring started with file system watchers")
-            else:
-                self.monitoring_thread = threading.Thread(
-                    target=self._monitor_loop_optimized,
-                    daemon=True,
-                    name="ConsoleLogMonitor"
-                )
-                self.monitoring_thread.start()
-                self.logger.debug("Console log monitoring started with optimized polling")
+            self.observer.start()
+            self.logger.debug("Console log monitoring started")
 
             self.monitoring_active = True
             return True
@@ -155,13 +129,10 @@ class ConsoleLogMonitorService:
         try:
             self.monitoring_active = False
 
-            if WATCHDOG_AVAILABLE and self.observer:
+            if self.observer:
                 self.observer.stop()
                 self.observer.join(timeout=2.0)
                 self.observer = None
-
-            if self.monitoring_thread and self.monitoring_thread.is_alive():
-                self.monitoring_thread.join(timeout=2.0)
 
             self.file_handler = None
 
@@ -172,36 +143,8 @@ class ConsoleLogMonitorService:
             self.logger.error(f"Error stopping console log monitoring: {e}")
             return False
 
-    def _monitor_loop_optimized(self):
-        """Polling loop as fallback when watchdog is unavailable."""
-        self.logger.debug("Console log monitoring loop started (optimized polling)")
-        last_size = self.last_position
-
-        while self.monitoring_active:
-            try:
-                current_time = time.time()
-                if current_time - self.last_file_check > self.file_check_interval:
-                    self.last_file_check = current_time
-                    if self.console_log_path is None or not self.console_log_path.exists():
-                        self.logger.warning("Console log file no longer exists")
-                        break
-
-                assert self.console_log_path is not None  # Type guard for mypy/pylance
-                current_size = self.console_log_path.stat().st_size
-
-                if current_size != last_size:
-                    self._process_file_changes()
-                    last_size = current_size
-
-            except Exception as e:
-                self.logger.error(f"Error in console log monitoring loop: {e}")
-
-            time.sleep(0.2)
-
-        self.logger.debug("Console log monitoring loop ended")
-
     def _process_file_changes(self):
-        """Process file changes detected by file system watcher or polling."""
+        """Process file changes detected by file system watcher."""
         if not self.monitoring_active:
             return
 

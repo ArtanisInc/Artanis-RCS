@@ -369,7 +369,7 @@ def main():
                             bomb_timer_service, auto_accept_service)
         window.show()
 
-        timer = QTimer()
+        timer = QTimer(app)
         timer.timeout.connect(lambda: None)
         timer.start(100)
 

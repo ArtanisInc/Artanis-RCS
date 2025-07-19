@@ -62,7 +62,7 @@ class RecoilService:
 
             # If compensation is active, stop it gracefully before clearing weapon
             if self.active:
-                self.logger.info("Stopping active compensation before weapon deselection")
+                self.logger.debug("Stopping active compensation before weapon deselection")
                 success = self.stop_compensation()
                 if not success:
                     self.logger.warning("Failed to stop compensation during weapon deselection")

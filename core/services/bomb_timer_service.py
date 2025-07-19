@@ -41,7 +41,7 @@ class BombTimerService(QObject):
         self.defuse_alert_callback: Optional[Callable[[bool], None]] = None
 
         # Qt Timer for smooth updates
-        self.qt_timer = QTimer()
+        self.qt_timer = QTimer(self)
         self.qt_timer.timeout.connect(self._timer_update)
 
         # Connect signals to slots (thread-safe)

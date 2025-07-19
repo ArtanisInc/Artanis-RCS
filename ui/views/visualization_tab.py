@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (
     QLabel, QCheckBox, QComboBox,
     QPushButton, QFileDialog, QMessageBox
 )
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, pyqtSignal
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
@@ -94,6 +94,9 @@ class VisualizationControls:
 class VisualizationTab(QWidget):
     """Visualization tab with externalized styles and modular controls."""
 
+    # Signal for thread-safe weapon updates
+    _weapon_update_requested = pyqtSignal(str)
+
     def __init__(self, config_service: ConfigService):
         super().__init__()
 
@@ -107,10 +110,13 @@ class VisualizationTab(QWidget):
         self._last_update_time = 0
         self._debounce_delay = 0.1  # 100ms
 
-        # Timer pour les mises à jour différées
-        self._update_timer = QTimer()
+        # Timer pour les mises à jour différées (must be created in main thread)
+        self._update_timer = QTimer(self)
         self._update_timer.setSingleShot(True)
         self._update_timer.timeout.connect(self._process_pending_update)
+
+        # Connect signal to slot for thread-safe updates
+        self._weapon_update_requested.connect(self._handle_weapon_update_signal)
 
         # Initialize components
         self.pattern_visualizer = PatternVisualizer(width=6, height=5, dpi=100)
@@ -168,18 +174,33 @@ class VisualizationTab(QWidget):
     def update_weapon_visualization(self, weapon_name: Optional[str]):
         """
         Update visualization with specified weapon pattern with debouncing.
+        Thread-safe: can be called from any thread.
 
         Args:
             weapon_name: Name of weapon to visualize, or None to clear
         """
         # Handle weapon clearing (None or empty string)
         if not weapon_name:
-            self._clear_visualization()
-            self.current_weapon = None
+            # Use signal for thread-safe clearing
+            self._weapon_update_requested.emit("")
             return
 
         # Skip if same weapon to avoid unnecessary updates
         if self.current_weapon == weapon_name:
+            return
+
+        # Use signal for thread-safe update
+        self._weapon_update_requested.emit(weapon_name)
+
+    def _handle_weapon_update_signal(self, weapon_name: str):
+        """
+        Handle weapon update signal in main thread.
+        This method is guaranteed to run in the main GUI thread.
+        """
+        # Handle weapon clearing
+        if not weapon_name:
+            self._clear_visualization()
+            self.current_weapon = None
             return
 
         current_time = time.time()
@@ -194,6 +215,7 @@ class VisualizationTab(QWidget):
         if time_since_last < self._debounce_delay:
             self._pending_weapon = weapon_name
             remaining_time = int((self._debounce_delay - time_since_last) * 1000)
+            # Now safe to start timer since we're in main thread
             self._update_timer.start(remaining_time)
             return
 

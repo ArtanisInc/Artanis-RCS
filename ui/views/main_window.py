@@ -14,6 +14,7 @@ from PyQt5.QtGui import QCloseEvent, QFont
 
 from core.services.recoil_service import RecoilService
 from core.services.config_service import ConfigService
+from core.services.weapon_state_service import WeaponStateService
 from ui.views.config_tab import ConfigTab
 from ui.views.visualization_tab import VisualizationTab
 from ui.widgets.bomb_timer_overlay import BombTimerOverlay
@@ -163,6 +164,9 @@ class MainWindow(QMainWindow):
         self.recoil_service = recoil_service
         self.config_service = config_service
 
+        # Initialize weapon state service
+        self.weapon_state_service = WeaponStateService()
+
         # Service references
         self.hotkey_service = None
         self.gsi_service = None
@@ -260,7 +264,7 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setTabPosition(QTabWidget.North)
 
-        self.config_tab = ConfigTab(self.config_service)
+        self.config_tab = ConfigTab(self.config_service, self.weapon_state_service)
         self.visualization_tab = VisualizationTab(self.config_service)
 
         self.tabs.addTab(self.config_tab, "⚙️ Configuration")
@@ -274,12 +278,15 @@ class MainWindow(QMainWindow):
     def _setup_connections(self):
         """Setup signal-slot connections."""
         # Control panel connections
-        self.control_panel.start_button.clicked.connect(
-            self._start_compensation)
+        self.control_panel.start_button.clicked.connect(self._start_compensation)
         self.control_panel.stop_button.clicked.connect(self._stop_compensation)
 
+        # Weapon state service connections
+        self.weapon_state_service.weapon_changed.connect(self._on_weapon_state_changed)
+        self.weapon_state_service.weapon_ui_sync_requested.connect(self._sync_weapon_ui)
+
         # Configuration tab connections
-        self.config_tab.weapon_changed.connect(self._on_weapon_changed)
+        self.config_tab.weapon_changed.connect(self._on_config_weapon_changed)
         self.config_tab.settings_saved.connect(self._on_settings_saved)
         self.config_tab.hotkeys_updated.connect(self._on_hotkeys_updated)
         self.tabs.currentChanged.connect(self._on_tab_changed)
@@ -331,50 +338,88 @@ class MainWindow(QMainWindow):
     def sync_ui_with_gsi_weapon(self, weapon_name: str) -> None:
         """Synchronize UI weapon selection with GSI detected weapon."""
         try:
-            if not weapon_name:
+            if not self.weapon_state_service.should_process_gsi_change():
+                self.logger.debug("Skipping GSI weapon sync during UI update")
                 return
 
-            weapon_combo = self.config_tab.global_weapon_section.weapon_combo
-            index = weapon_combo.findData(weapon_name)
-
-            if index >= 0:
-                # Bloquer temporairement les signaux pour éviter la récursion
-                weapon_combo.blockSignals(True)
-                weapon_combo.setCurrentIndex(index)
-                weapon_combo.blockSignals(False)
-
-                # Manually update compensation parameters since signals were blocked
-                self.config_tab._on_weapon_changed(index)
-
-                # Mettre à jour la visualisation
-                self.visualization_tab.update_weapon_visualization(weapon_name)
-
-                self.logger.debug(
-                    f"UI synchronized with GSI weapon: {weapon_name}")
-            else:
-                self.logger.warning(
-                    f"GSI weapon not found in UI combo: {weapon_name}")
+            # Use weapon state service to handle GSI weapon changes
+            self.weapon_state_service.set_weapon_from_gsi(weapon_name)
 
         except Exception as e:
-            self.logger.error(f"UI synchronization error: {e}")
+            self.logger.error(f"GSI weapon sync error: {e}")
 
     def _clear_ui_weapon_selection(self) -> None:
         """Clear weapon selection in UI when transitioning to automatic mode."""
         try:
-            weapon_combo = self.config_tab.global_weapon_section.weapon_combo
-
-            # Block signals to prevent recursion
-            weapon_combo.blockSignals(True)
-            weapon_combo.setCurrentIndex(0)  # Set to "Select a weapon..." instead of empty
-            weapon_combo.blockSignals(False)
-
-            # Clear visualization
-            self.visualization_tab._clear_visualization()
-
-            self.logger.debug("UI weapon selection cleared for automatic mode")
+            # Use weapon state service to clear selection
+            self.weapon_state_service.clear_weapon_selection()
 
         except Exception as e:
             self.logger.error(f"UI weapon selection clearing error: {e}")
+
+    def _sync_weapon_ui(self, weapon_name: str) -> None:
+        """Synchronize UI elements with weapon state (no signal loops)."""
+        try:
+            weapon_combo = self.config_tab.global_weapon_section.weapon_combo
+
+            if not weapon_name:
+                # Clear selection and parameters
+                weapon_combo.setCurrentIndex(0)
+                self.config_tab.params_section.param_controls['multiple'].setValue(0)
+                self.config_tab.params_section.param_controls['sleep_divider'].setValue(1.0)
+                self.config_tab.params_section.param_controls['sleep_suber'].setValue(0.0)
+                self.visualization_tab._clear_visualization()
+                self.logger.debug("UI weapon selection cleared")
+                return
+
+            index = weapon_combo.findData(weapon_name)
+            if index >= 0:
+                # Update combo box
+                weapon_combo.setCurrentIndex(index)
+
+                # Update weapon parameters directly without triggering signals
+                weapon = self.config_service.get_weapon_profile(weapon_name)
+                if weapon:
+                    self.config_tab.params_section.param_controls['multiple'].setValue(weapon.multiple)
+                    self.config_tab.params_section.param_controls['sleep_divider'].setValue(weapon.sleep_divider)
+                    self.config_tab.params_section.param_controls['sleep_suber'].setValue(weapon.sleep_suber)
+
+                self.visualization_tab.update_weapon_visualization(weapon_name)
+
+                self.logger.debug(f"UI synchronized with weapon: {weapon_name}")
+            else:
+                self.logger.warning(f"Weapon not found in UI combo: {weapon_name}")
+
+        except Exception as e:
+            self.logger.error(f"UI synchronization error: {e}")
+
+    def _on_weapon_state_changed(self, weapon_name: str, source: str) -> None:
+        """Handle weapon state changes from the weapon state service."""
+        try:
+            self.logger.debug(f"Weapon state changed: {weapon_name} (source: {source})")
+
+            # Update recoil service
+            if source in ["user", "gsi", "clear"]:
+                if self.recoil_service.current_weapon != weapon_name:
+                    self.recoil_service.set_weapon(weapon_name)
+
+            # Update visualization for all sources
+            if weapon_name:
+                self.visualization_tab.update_weapon_visualization(weapon_name)
+            else:
+                self.visualization_tab.update_weapon_visualization(None)
+
+        except Exception as e:
+            self.logger.error(f"Weapon state change handling error: {e}")
+
+    def _on_config_weapon_changed(self, weapon_name: str) -> None:
+        """Handle weapon changes from config tab (user selection)."""
+        try:
+            # Use weapon state service to handle user weapon changes
+            self.weapon_state_service.set_weapon_from_user(weapon_name)
+
+        except Exception as e:
+            self.logger.error(f"Config weapon change error: {e}")
 
     def _update_status(self, status: Dict[str, Any]):
         """Update RCS operational status display with GSI sync."""
@@ -398,7 +443,7 @@ class MainWindow(QMainWindow):
                 weapon_name)
             weapon_text = display_name
 
-            # Synchroniser l'interface utilisateur avec l'arme détectée
+            # Synchronize UI with detected weapon
             self.sync_ui_with_gsi_weapon(weapon_name)
         else:
             weapon_text = "None"
@@ -471,20 +516,6 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.logger.debug(f"GSI status update error: {e}")
 
-    def _on_weapon_changed(self, weapon_name: str):
-        """Handle weapon selection change event."""
-        # Handle weapon deselection
-        # Update visualization tab (handle deselection)
-        if not weapon_name:
-            self.visualization_tab.update_weapon_visualization(None)
-            # Clear weapon in recoil service
-            if self.recoil_service.current_weapon is not None:
-                self.recoil_service.set_weapon("")
-        else:
-            self.visualization_tab.update_weapon_visualization(weapon_name)
-            # Update recoil service configuration
-            if self.recoil_service.current_weapon != weapon_name:
-                self.recoil_service.set_weapon(weapon_name)
 
     def _on_settings_saved(self):
         """Handle settings save event with dynamic reconfiguration."""
@@ -542,24 +573,24 @@ class MainWindow(QMainWindow):
             )
 
             if auto_detection_active:
-                # Désactiver les contrôles manuels si la détection automatique est active
+                # Disable manual controls when automatic detection is active
                 self.control_panel.start_button.setEnabled(False)
                 self.control_panel.stop_button.setEnabled(False)
 
-                # Optionnel: changer le texte pour indiquer pourquoi c'est désactivé
+                # Change tooltip text to indicate why controls are disabled
                 self.control_panel.start_button.setToolTip(
                     "Manual control disabled - Automatic weapon detection is active")
                 self.control_panel.stop_button.setToolTip(
                     "Manual control disabled - Automatic weapon detection is active")
             else:
-                # Contrôles normaux quand la détection automatique est désactivée
+                # Normal controls when automatic detection is disabled
                 self.control_panel.start_button.setEnabled(start_enabled)
                 self.control_panel.stop_button.setEnabled(stop_enabled)
 
-                # Réactiver les contrôles de sélection d'arme
+                # Re-enable weapon selection controls
                 self.config_tab.set_weapon_controls_enabled(True)
 
-                # Remettre les tooltips normaux
+                # Restore normal tooltips
                 self.control_panel.start_button.setToolTip("Start recoil compensation")
                 self.control_panel.stop_button.setToolTip("Stop recoil compensation")
 
