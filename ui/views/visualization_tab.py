@@ -129,21 +129,38 @@ class VisualizationTab(QWidget):
 
     def _setup_ui(self):
         """Configure the user interface."""
+
         main_layout = QVBoxLayout(self)
 
         # Matplotlib visualizer
         main_layout.addWidget(self.pattern_visualizer)
 
         # Matplotlib toolbar
-        self.matplotlib_toolbar = NavigationToolbar2QT(
-            self.pattern_visualizer, self)
-        main_layout.addWidget(self.matplotlib_toolbar)
+        self.matplotlib_toolbar = None
+        self._main_layout = main_layout
+        QTimer.singleShot(50, self._create_delayed_toolbar)
 
         # Controls widget
         main_layout.addWidget(self.controls.widget)
 
         # Flexible space at bottom
         main_layout.addStretch()
+
+    def _create_delayed_toolbar(self):
+        """Create the matplotlib toolbar with a delay to avoid Qt connection issues."""
+        try:
+            if self.matplotlib_toolbar is None and hasattr(self, '_main_layout'):
+                self.matplotlib_toolbar = NavigationToolbar2QT(
+                    self.pattern_visualizer, self)
+                # Insert toolbar after pattern visualizer
+                self._main_layout.insertWidget(1, self.matplotlib_toolbar)
+                self.logger.debug("Matplotlib toolbar created successfully")
+        except Exception as e:
+            self.logger.warning("Failed to create matplotlib toolbar: %s", e)
+            # Create a simple label as fallback
+            from PyQt5.QtWidgets import QLabel
+            fallback_label = QLabel("Toolbar unavailable")
+            self._main_layout.insertWidget(1, fallback_label)
 
     def _setup_connections(self):
         """Configure signal connections."""
