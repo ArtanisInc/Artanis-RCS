@@ -38,9 +38,7 @@ class HotkeyMonitor:
         is_pressed = self.input_service.is_key_pressed(vk_code)
         was_pressed = self.key_states.get(identifier, False)
 
-        # Detect rising edge (key just pressed)
         if is_pressed and not was_pressed:
-            # Check debounce
             last_trigger = self.last_trigger_times.get(identifier, 0)
             if current_time - last_trigger >= self.debounce_delay:
                 self.last_trigger_times[identifier] = current_time
@@ -70,8 +68,6 @@ class CallbackManager:
     def register_weapon_callback(
             self, callback: Callable[[str], None]) -> None:
         """Register callback for weapon selection."""
-        # Note: This will be called for all weapons, callback receives weapon
-        # name
         self.weapon_callback = callback
         self.logger.debug("Weapon callback registered")
 
@@ -117,19 +113,15 @@ class HotkeyService:
         self.input_service = input_service
         self.config_service = config_service
 
-        # Weapons detection
         self.weapon_detection_service = None
 
-        # Components
         self.monitor = HotkeyMonitor(input_service)
         self.callback_manager = CallbackManager()
 
-        # Threading
         self.monitoring_thread: Optional[threading.Thread] = None
         self.stop_event = threading.Event()
         self.is_monitoring = False
 
-        # Hotkey mappings cache
         self.hotkey_mappings: Dict[str, int] = {}
         self.weapon_hotkeys: Dict[str, str] = {}
 
@@ -143,7 +135,6 @@ class HotkeyService:
             self.hotkey_mappings.clear()
             self.weapon_hotkeys.clear()
 
-            # System hotkeys
             system_actions = [
                 "toggle_recoil",
                 "toggle_weapon_detection",
@@ -155,7 +146,6 @@ class HotkeyService:
                     if vk_code:
                         self.hotkey_mappings[action] = vk_code
 
-            # Weapon hotkeys
             weapon_names = set(self.config_service.weapon_profiles.keys())
             for weapon_name in weapon_names:
                 key_name = hotkeys.get(weapon_name)

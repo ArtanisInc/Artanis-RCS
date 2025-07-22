@@ -21,11 +21,9 @@ class TTSService:
         self.logger = logging.getLogger("TTSService")
         self.enabled = enabled and SAPI_AVAILABLE
 
-        # Voice configuration
         self.voice_rate = 4
         self.voice_volume = 65
 
-        # SAPI instance
         self.voice = None
 
         if self.enabled:
@@ -39,18 +37,14 @@ class TTSService:
             return False
 
         try:
-            # Initialize COM
             pythoncom.CoInitialize()
 
-            # Create SAPI voice object
             self.voice = win32com.client.Dispatch("SAPI.SpVoice")
             self.voice.Rate = self.voice_rate
             self.voice.Volume = self.voice_volume
 
-            # Select preferred voice
             self._select_preferred_voice()
 
-            # Test with silent speech
             self.voice.Speak("", 3)  # Test with purge + async flag
             self.logger.debug("SAPI initialized successfully")
             return True
@@ -195,7 +189,6 @@ class TTSService:
 
         try:
             if enabled:
-                # Enable TTS
                 self.enabled = True
                 if not self.voice:
                     if not self._initialize_sapi():
@@ -203,7 +196,6 @@ class TTSService:
                         return False
                 self.logger.debug("TTS service enabled")
             else:
-                # Disable TTS
                 self.stop()
                 self.enabled = False
                 self.logger.debug("TTS service disabled")

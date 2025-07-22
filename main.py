@@ -57,7 +57,6 @@ def cleanup_log_file():
 
 def setup_logging() -> logging.Logger:
     """Configure logging system."""
-    # Clean up previous log file
     cleanup_log_file()
 
     logging.basicConfig(
@@ -124,16 +123,12 @@ def initialize_system() -> Tuple:
         if gsi_config.get("enabled", True):
             weapon_detection_service.configure(gsi_config)
 
-        # Initialize bomb timer service
         bomb_timer_service = BombTimerService(config_service)
 
-        # Initialize Auto Accept service
         auto_accept_service = AutoAcceptService(config_service, input_service, tts_service)
 
-        # Connect GSI service to Auto Accept (for better path detection)
         auto_accept_service.set_gsi_service(gsi_service)
 
-        # Log grouped services summary
         services_summary = [
             "Input",
             "Timing (10MHz/1ns)",

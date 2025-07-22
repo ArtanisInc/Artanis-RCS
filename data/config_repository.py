@@ -65,7 +65,6 @@ class CSVRepository:
         self.logger = logging.getLogger("CSVRepository")
         self.patterns_folder = Path(patterns_folder)
 
-        # Ensure patterns directory exists
         self.patterns_folder.mkdir(exist_ok=True)
 
         self.logger.info(
@@ -97,7 +96,6 @@ class CSVRepository:
                 try:
                     parts = line.split(',')
                     if len(parts) >= 3:
-                        # Apply sensitivity conversion
                         dx = float(
                             parts[0]) * self.SENSITIVITY_MULTIPLIER / game_sensitivity
                         dy = float(
