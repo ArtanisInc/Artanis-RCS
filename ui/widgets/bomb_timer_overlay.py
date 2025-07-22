@@ -19,14 +19,12 @@ class BombTimerOverlay(QWidget):
         super().__init__(parent)
         self.logger = logging.getLogger("BombTimerOverlay")
 
-        # Timer state
         self.remaining_time = 0.0
         self.max_time = 40.0
         self.has_defuse_kit = False
         self.can_defuse = False
         self.is_active = False
 
-        # Visual settings
         self.widget_size = 160
         self.circle_radius = 60
         self.circle_thickness = 8
@@ -39,7 +37,6 @@ class BombTimerOverlay(QWidget):
         self.defuse_color = QColor(52, 152, 219)  # Blue
         self.background_color = QColor(44, 62, 80)  # Dark blue-gray
 
-        # Setup widget
         self._setup_ui()
         self._setup_timer()
 
@@ -59,10 +56,8 @@ class BombTimerOverlay(QWidget):
         # Try translucent background again now that threading is fixed
         self.setAttribute(Qt.WA_TranslucentBackground)
 
-        # Set transparent background style
         self.setStyleSheet("background-color: transparent;")
 
-        # Set initial position (top-right corner)
         screen = QApplication.primaryScreen()
         if screen:
             screen_geometry = screen.geometry()
@@ -108,13 +103,10 @@ class BombTimerOverlay(QWidget):
         center_x = self.width() // 2
         center_y = self.height() // 2
 
-        # Draw background circle
         self._draw_background_circle(painter, center_x, center_y)
 
-        # Draw progress arc
         self._draw_progress_arc(painter, center_x, center_y)
 
-        # Draw timer text
         self._draw_timer_text(painter, center_x, center_y)
 
         # Draw defuse kit indicator
@@ -148,7 +140,6 @@ class BombTimerOverlay(QWidget):
         else:
             color = self.safe_color
 
-        # Draw progress arc
         pen = QPen(color, self.circle_thickness)
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
@@ -192,11 +183,9 @@ class BombTimerOverlay(QWidget):
         else:
             time_text = f"{seconds:.1f}"
 
-        # Set font
         font = QFont("Arial", self.font_size, QFont.Bold)
         painter.setFont(font)
 
-        # Determine text color
         if self.can_defuse:
             text_color = self.safe_color
         elif self.remaining_time <= 10.0:
@@ -206,7 +195,6 @@ class BombTimerOverlay(QWidget):
 
         painter.setPen(QPen(text_color))
 
-        # Calculate text position
         metrics = QFontMetrics(font)
         text_width = metrics.width(time_text)
         text_height = metrics.height()

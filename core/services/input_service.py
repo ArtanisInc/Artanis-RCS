@@ -14,7 +14,6 @@ from ctypes import wintypes
 class WindowsInputAPI:
     """Windows API constants and structures for SendInput."""
 
-    # Mouse event flags
     MOUSEEVENTF_MOVE = 0x0001
     MOUSEEVENTF_LEFTDOWN = 0x0002
     MOUSEEVENTF_LEFTUP = 0x0004
@@ -27,7 +26,6 @@ class WindowsInputAPI:
     INPUT_MOUSE = 0
     INPUT_KEYBOARD = 1
 
-    # Keyboard event flags
     KEYEVENTF_KEYUP = 0x0002
 
 
@@ -103,7 +101,6 @@ class KeyMapping:
         mappings.update(cls.NUMPAD_OPERATORS)
         mappings.update(cls.PUNCTUATION)
 
-        # Add alphabet
         for i in range(ord('A'), ord('Z') + 1):
             mappings[chr(i)] = i
 

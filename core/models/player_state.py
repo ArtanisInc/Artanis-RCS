@@ -61,7 +61,6 @@ class WeaponState:
         if "cz75" in weapon_name:
             return WeaponCategory.PRIMARY
 
-        # Standard primary weapons
         if any(weapon in weapon_name for weapon in primary_weapons):
             return WeaponCategory.PRIMARY
 

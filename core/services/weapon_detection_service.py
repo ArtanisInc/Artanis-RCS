@@ -76,7 +76,6 @@ class WeaponDetectionService:
             self.enabled = True
             self.detection_state.reset()
 
-            # Clear manually set weapon when transitioning to automatic mode
             # This ensures clean state until GSI provides weapon data
             if self.recoil_service.current_weapon:
                 self.logger.debug("Clearing manually set weapon: %s",

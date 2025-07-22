@@ -28,7 +28,6 @@ class WindowsTimer:
             raise RuntimeError("QueryPerformanceFrequency failed")
         self.freq_value = self.frequency.value
 
-        # Set Windows timer resolution to 1ms
         self.winmm.timeBeginPeriod(1)
 
         # Calibrate timing overhead
@@ -100,7 +99,6 @@ class PrecisionSleep:
         if duration_ms <= 0:
             return
 
-        # Set high resolution temporarily
         self.timer.winmm.timeBeginPeriod(1)
 
         try:

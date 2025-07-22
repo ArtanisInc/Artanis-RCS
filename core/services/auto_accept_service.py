@@ -29,28 +29,22 @@ class AutoAcceptService(QObject):
         self.input_service = input_service
         self.tts_service = tts_service
 
-        # Sub-services
         self.console_monitor = ConsoleLogMonitorService(config_service)
         self.screen_capture = ScreenCaptureService()
 
-        # GSI service reference (set later)
         self.gsi_service = None
 
-        # Service state
         self.enabled = False
         self.accepting_in_progress = False
         self.accept_thread: Optional[threading.Thread] = None
 
-        # Configuration
         self.waiting_time = 5  # Default waiting time in seconds
         self.target_color = (54, 183, 82)  # Green Accept button color
         self.color_tolerance = 20
         self.click_delay_ms = 50
 
-        # Load configuration
         self._load_config()
 
-        # Connect signals
         self.match_found_signal.connect(self._on_match_found_signal)
 
         # Register console log callback
