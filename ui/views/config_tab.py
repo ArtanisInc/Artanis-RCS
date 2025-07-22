@@ -59,7 +59,6 @@ class GlobalWeaponSection(ConfigSection):
         self.weapon_combo = QComboBox()
         self._configure_weapon_combo()
 
-        # Save button
         self.save_global_button = self.create_styled_button("Save")
 
         # Layout arrangement
@@ -100,7 +99,6 @@ class CompensationParamsSection(ConfigSection):
         layout.setContentsMargins(12, 10, 12, 10)
         layout.setSpacing(8)
 
-        # Create controls
         self._create_param_controls()
 
         # Layout controls
@@ -115,7 +113,6 @@ class CompensationParamsSection(ConfigSection):
             layout.addWidget(label, row, col)
             layout.addWidget(self.param_controls[key], row, col + 1)
 
-        # Save button
         self.save_config_button = self.create_styled_button("Save")
         layout.addWidget(self.save_config_button, 1, 2, 1, 2)
 
@@ -127,21 +124,18 @@ class CompensationParamsSection(ConfigSection):
         self.param_controls['multiple'].setSuffix("x")
         self.param_controls['multiple'].setMaximumWidth(80)
 
-        # Sleep divider control
         self.param_controls['sleep_divider'] = QDoubleSpinBox()
         self.param_controls['sleep_divider'].setRange(0.1, 20.0)
         self.param_controls['sleep_divider'].setSingleStep(0.1)
         self.param_controls['sleep_divider'].setSuffix(" div")
         self.param_controls['sleep_divider'].setMaximumWidth(100)
 
-        # Sleep suber control
         self.param_controls['sleep_suber'] = QDoubleSpinBox()
         self.param_controls['sleep_suber'].setRange(-5.0, 5.0)
         self.param_controls['sleep_suber'].setSingleStep(0.1)
         self.param_controls['sleep_suber'].setSuffix(" ms")
         self.param_controls['sleep_suber'].setMaximumWidth(100)
 
-        # Apply uniform styling
         for control in self.param_controls.values():
             control.setMaximumHeight(28)
             control.setFont(QFont("Arial", 10))
@@ -160,7 +154,6 @@ class FeaturesSection(ConfigSection):
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(6)
 
-        # Audio feature checkbox
         self.audio_feature = QCheckBox("Audio Notification")
         self.audio_feature.setChecked(True)
         self.audio_feature.setFont(QFont("Arial", 10))
@@ -183,7 +176,6 @@ class FeaturesSection(ConfigSection):
         # Column 2: Auto Accept
         layout.addWidget(self.auto_accept_feature, 0, 1)
 
-        # Set column stretches for better distribution
         layout.setColumnStretch(0, 1)
         layout.setColumnStretch(1, 1)
 
@@ -220,11 +212,9 @@ class HotkeysSection(ConfigSection):
         self.weapon_group.setMaximumHeight(130)
         main_layout.addWidget(self.weapon_group)
 
-        # Setup each section
         self._setup_system_hotkeys()
         self._setup_weapon_hotkeys()
 
-        # Save button
         save_layout = QHBoxLayout()
         save_layout.addStretch()
         self.save_hotkeys_button = self.create_styled_button("Save")
@@ -240,7 +230,6 @@ class HotkeysSection(ConfigSection):
         layout.setContentsMargins(12, 8, 12, 8)
         layout.setSpacing(6)
 
-        # Create system hotkey controls
         system_hotkeys = ['toggle_recoil', 'toggle_weapon_detection', 'exit']
         for hotkey in system_hotkeys:
             combo = QComboBox()
@@ -251,7 +240,6 @@ class HotkeysSection(ConfigSection):
                 combo.addItem(option)
             self.hotkey_controls[hotkey] = combo
 
-        # Layout system hotkeys
         hotkey_items = [
             ("Toggle RCS:", 'toggle_recoil', 0, 0),
             ("Toggle Detection:", 'toggle_weapon_detection', 0, 2),
@@ -285,7 +273,6 @@ class HotkeysSection(ConfigSection):
         self.key_hotkey_combo.setMaximumWidth(100)
         self.key_hotkey_combo.setFont(QFont("Arial", 10))
 
-        # Add key options
         self.key_hotkey_combo.addItem("None", "")
         for option in self.key_options:
             self.key_hotkey_combo.addItem(option)
@@ -294,7 +281,6 @@ class HotkeysSection(ConfigSection):
         self.assign_weapon_key_button = self._create_weapon_button("Assign")
         self.remove_weapon_key_button = self._create_weapon_button("Remove")
 
-        # Layout weapon controls
         layout.addWidget(weapon_label, 0, 0)
         layout.addWidget(self.weapon_hotkey_combo, 0, 1)
         layout.addWidget(key_label, 0, 2)
@@ -332,7 +318,6 @@ class HotkeysSection(ConfigSection):
         self.key_hotkey_combo.setMaximumWidth(100)
         self.key_hotkey_combo.setFont(QFont("Arial", 10))
 
-        # Add key options
         self.key_hotkey_combo.addItem("None", "")
         for option in self.key_options:
             self.key_hotkey_combo.addItem(option)
@@ -341,7 +326,6 @@ class HotkeysSection(ConfigSection):
         self.assign_weapon_key_button = self._create_weapon_button("Assign")
         self.remove_weapon_key_button = self._create_weapon_button("Remove")
 
-        # Layout weapon controls
         layout.addWidget(weapon_label, 4, 0)
         layout.addWidget(self.weapon_hotkey_combo, 4, 1)
         layout.addWidget(key_label, 4, 2)
@@ -378,7 +362,6 @@ class ConfigTab(QWidget):
         self.logger = logging.getLogger("ConfigTab")
         self.config_service = config_service
 
-        # Create sections
         self.global_weapon_section = GlobalWeaponSection()
         self.params_section = CompensationParamsSection()
         self.features_section = FeaturesSection()
@@ -406,7 +389,6 @@ class ConfigTab(QWidget):
         self.global_weapon_section.weapon_combo.currentIndexChanged.connect(
             self._on_weapon_changed)
 
-        # Save buttons
         self.global_weapon_section.save_global_button.clicked.connect(
             self._save_global_config)
         self.params_section.save_config_button.clicked.connect(
@@ -448,10 +430,8 @@ class ConfigTab(QWidget):
 
     def _load_weapons(self):
         """Load weapons into combo boxes."""
-        # Store current selections
         current_weapon = self.global_weapon_section.weapon_combo.currentData()
 
-        # Clear and repopulate
         self.global_weapon_section.weapon_combo.clear()
         self.hotkeys_section.weapon_hotkey_combo.clear()
 
@@ -509,9 +489,7 @@ class ConfigTab(QWidget):
 
         weapon_name = self.global_weapon_section.weapon_combo.currentData()
 
-        # Handle weapon deselection ("Select a weapon..." option)
         if not weapon_name:
-            # Clear weapon parameters display
             self.params_section.param_controls['multiple'].setValue(0)
             self.params_section.param_controls['sleep_divider'].setValue(1.0)
             self.params_section.param_controls['sleep_suber'].setValue(0.0)
@@ -525,7 +503,6 @@ class ConfigTab(QWidget):
             self.logger.warning("Weapon profile not found: %s", weapon_name)
             return
 
-        # Update controls
         self.params_section.param_controls['multiple'].setValue(
             weapon.multiple)
         self.params_section.param_controls['sleep_divider'].setValue(
@@ -657,7 +634,6 @@ class ConfigTab(QWidget):
             current_sensitivity = self.config_service.config.get(
                 "game_sensitivity", 1.0)
 
-            # Check if sensitivity changed
             if abs(new_sensitivity - current_sensitivity) > 0.001:
                 success = self.config_service.update_global_sensitivity(
                     new_sensitivity)
@@ -698,7 +674,6 @@ class ConfigTab(QWidget):
                 weapon.game_sensitivity -
                 new_sensitivity) > 0.001
 
-            # Update parameters
             weapon.multiple = self.params_section.param_controls['multiple'].value(
             )
             weapon.sleep_divider = (
@@ -706,7 +681,6 @@ class ConfigTab(QWidget):
             weapon.sleep_suber = (
                 self.params_section.param_controls['sleep_suber'] .value())
 
-            # Update sensitivity if needed
             if sensitivity_changed:
                 success = self.config_service.update_weapon_sensitivity(
                     weapon_name, new_sensitivity)
@@ -733,7 +707,6 @@ class ConfigTab(QWidget):
     def _save_features_config(self):
         """Save features configuration."""
         try:
-            # Save all features settings in one place
             features_settings = {
                 "tts_enabled": self.features_section.audio_feature.isChecked(),
                 "bomb_timer_enabled": self.features_section.bomb_timer_feature.isChecked(),
@@ -741,7 +714,6 @@ class ConfigTab(QWidget):
             }
             self.config_service.config["features"] = features_settings
 
-            # Save configuration
             success = self.config_service.save_config()
 
             if success:
@@ -757,7 +729,6 @@ class ConfigTab(QWidget):
     def _save_hotkeys_config(self):
         """Save hotkeys configuration with conflict validation."""
         try:
-            # Validate for conflicts
             is_valid, conflicts = self._validate_hotkeys_conflicts()
 
             if not is_valid:
@@ -773,7 +744,6 @@ class ConfigTab(QWidget):
                 QMessageBox.warning(self, "Hotkey Conflict", error_message)
                 return
 
-            # Save if valid
             hotkeys = {}
 
             # System hotkeys

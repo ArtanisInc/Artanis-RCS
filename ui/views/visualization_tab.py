@@ -54,7 +54,6 @@ class VisualizationControls:
         # Style and export controls
         controls_layout = QHBoxLayout()
 
-        # Color style selection
         style_layout = QHBoxLayout()
         style_layout.addWidget(QLabel("Style:"))
 
@@ -118,7 +117,6 @@ class VisualizationTab(QWidget):
         # Connect signal to slot for thread-safe updates
         self._weapon_update_requested.connect(self._handle_weapon_update_signal)
 
-        # Initialize components
         self.pattern_visualizer = PatternVisualizer(width=6, height=5, dpi=100)
         self.controls = VisualizationControls()
 
@@ -179,7 +177,6 @@ class VisualizationTab(QWidget):
         Args:
             weapon_name: Name of weapon to visualize, or None to clear
         """
-        # Handle weapon clearing (None or empty string)
         if not weapon_name:
             # Use signal for thread-safe clearing
             self._weapon_update_requested.emit("")
@@ -193,7 +190,6 @@ class VisualizationTab(QWidget):
         Handle weapon update signal in main thread.
         This method is guaranteed to run in the main GUI thread.
         """
-        # Handle weapon clearing
         if not weapon_name:
             self._clear_visualization()
             self.current_weapon = None
@@ -231,14 +227,12 @@ class VisualizationTab(QWidget):
         self._last_update_time = time.time()
 
         try:
-            # Get weapon profile
             weapon = self.config_service.get_weapon_profile(weapon_name)
             if not weapon:
                 self.logger.warning("Weapon profile not found: %s", weapon_name)
                 self._clear_visualization()
                 return
 
-            # Update visualizer with safety check
             if hasattr(weapon, 'recoil_pattern') and weapon.recoil_pattern:
                 self.pattern_visualizer.set_pattern(weapon.recoil_pattern)
             else:
@@ -246,7 +240,6 @@ class VisualizationTab(QWidget):
                 self._clear_visualization()
                 return
 
-            # Store current weapon
             self.current_weapon = weapon_name
 
             self.logger.debug("Visualization updated: %s", weapon_name)
@@ -284,12 +277,10 @@ class VisualizationTab(QWidget):
             return
 
         try:
-            # Get selected colors
             colors = self.controls.style_combo.currentData()
             if not colors or len(colors) < 2:
                 return
 
-            # Update visualizer colors
             self.pattern_visualizer.set_colors(
                 point_color=colors[1],
                 line_color=colors[0]
@@ -300,7 +291,6 @@ class VisualizationTab(QWidget):
     def _export_figure(self):
         """Export the visualization figure to file."""
         try:
-            # Generate default filename
             if self.current_weapon:
                 default_filename = f"pattern_{self.current_weapon}.png"
             else:
@@ -371,7 +361,6 @@ class VisualizationTab(QWidget):
         try:
             options = settings.get("visualization_options", {})
 
-            # Apply display options
             self.controls.show_grid.setChecked(options.get("show_grid", True))
             self.controls.show_points.setChecked(
                 options.get("show_points", True))
@@ -402,7 +391,6 @@ class VisualizationTab(QWidget):
             # Reset style to first option
             self.controls.style_combo.setCurrentIndex(0)
 
-            # Reset matplotlib view
             self.pattern_visualizer.reset_view()
 
             self.logger.debug("Visualization view reset")

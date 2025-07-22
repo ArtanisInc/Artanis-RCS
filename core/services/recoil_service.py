@@ -28,7 +28,6 @@ class RecoilService:
         self.timing_service = TimingService()
         self.tts_service = tts_service
 
-        # State management
         self.active = False
         self.current_weapon = None
         self.running_thread = None
@@ -36,14 +35,11 @@ class RecoilService:
         self.weapon_change_event = threading.Event()
         self._last_weapon_for_compensation = None
 
-        # Reference to weapon detection service for TTS control
         self.weapon_detection_service = None
 
-        # Recoil accumulation for future implementation
         self.accumulated_x = 0.0
         self.accumulated_y = 0.0
 
-        # Observer pattern for status changes
         self.status_changed_callbacks: List[Callable[[
             Dict[str, Any]], None]] = []
 
@@ -56,11 +52,9 @@ class RecoilService:
 
     def set_weapon(self, weapon_name: str) -> bool:
         """Set current weapon for compensation with conditional TTS notification."""
-        # Handle weapon deselection (empty string means "no weapon")
         if not weapon_name:
             weapon_changed = self.current_weapon is not None
 
-            # If compensation is active, stop it gracefully before clearing weapon
             if self.active:
                 self.logger.debug("Stopping active compensation before weapon deselection")
                 success = self.stop_compensation()
@@ -70,7 +64,6 @@ class RecoilService:
             self.current_weapon = None
             self.logger.info("Current weapon: None")
 
-            # Notify observers of weapon change
             if weapon_changed:
                 self._notify_status_changed()
 
@@ -88,13 +81,11 @@ class RecoilService:
         else:
             self.logger.debug("Weapon reconfirmed: %s", weapon_name)
 
-        # Signal weapon change to compensation thread
         if weapon_changed and self.active:
             self.weapon_change_event.set()
             self.logger.debug(
                 "Weapon change signal sent to compensation thread")
 
-        # Notify observers of weapon change
         if weapon_changed:
             self._notify_status_changed()
 

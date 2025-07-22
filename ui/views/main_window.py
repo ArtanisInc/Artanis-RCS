@@ -31,7 +31,6 @@ class ControlPanel:
         layout = QHBoxLayout(self.group_box)
         layout.setSpacing(10)
 
-        # RCS Status section
         status_frame = self._create_status_section()
         layout.addWidget(status_frame)
 
@@ -39,7 +38,6 @@ class ControlPanel:
         controls_frame = self._create_controls_section()
         layout.addWidget(controls_frame)
 
-        # GSI Status section
         gsi_frame = self._create_gsi_status_section()
         layout.addWidget(gsi_frame)
 
@@ -175,10 +173,8 @@ class MainWindow(QMainWindow):
         self.bomb_timer_service = None
         self.auto_accept_service = None
 
-        # UI components
         self.control_panel = ControlPanel()
 
-        # Bomb timer overlay
         self.bomb_timer_overlay = BombTimerOverlay()
 
         self._setup_ui()
@@ -201,17 +197,14 @@ class MainWindow(QMainWindow):
         self.weapon_detection_service = weapon_detection_service
         self.logger.debug("GSI services integrated for status monitoring")
 
-        # Immediate status refresh
         self._update_gsi_status()
 
-        # Update UI to reflect initial weapon detection state
         self._sync_initial_ui_state()
 
     def set_bomb_timer_service(self, bomb_timer_service):
         """Set bomb timer service and connect overlay."""
         self.bomb_timer_service = bomb_timer_service
 
-        # Connect bomb timer service to overlay
         bomb_timer_service.set_timer_update_callback(
             self.bomb_timer_overlay.update_bomb_state
         )
@@ -236,7 +229,6 @@ class MainWindow(QMainWindow):
     def _setup_ui(self):
         """Setup main UI layout with restored interface."""
         self.setWindowTitle("Artanis's RCS")
-        # Set window flags to show title bar with close and minimize buttons
         flags = (Qt.Window | Qt.WindowTitleHint |  # type: ignore
                 Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint)  # type: ignore
         self.setWindowFlags(flags)
@@ -273,11 +265,9 @@ class MainWindow(QMainWindow):
 
     def _setup_connections(self):
         """Setup signal-slot connections."""
-        # Control panel connections
         self.control_panel.start_button.clicked.connect(self._start_compensation)
         self.control_panel.stop_button.clicked.connect(self._stop_compensation)
 
-        # Configuration tab connections
         self.config_tab.weapon_changed.connect(self._on_weapon_changed)
         self.config_tab.settings_saved.connect(self._on_settings_saved)
         self.config_tab.hotkeys_updated.connect(self._on_hotkeys_updated)
@@ -292,11 +282,9 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            # Update recoil service if weapon changed
             if self.recoil_service.current_weapon != weapon_name:
                 self.recoil_service.set_weapon(weapon_name)
 
-            # Update visualization
             if weapon_name:
                 self.visualization_tab.update_weapon_visualization(weapon_name)
             else:
@@ -315,7 +303,6 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Warning", "Please select a weapon")
                 return
 
-            # Update weapon configuration if changed
             if self.recoil_service.current_weapon != weapon_name:
                 self.recoil_service.set_weapon(weapon_name)
 
@@ -363,7 +350,6 @@ class MainWindow(QMainWindow):
             weapon_combo = self.config_tab.global_weapon_section.weapon_combo
 
             if not weapon_name:
-                # Clear selection and parameters
                 weapon_combo.setCurrentIndex(0)
                 self.config_tab.params_section.param_controls['multiple'].setValue(0)
                 self.config_tab.params_section.param_controls['sleep_divider'].setValue(1.0)
@@ -373,17 +359,14 @@ class MainWindow(QMainWindow):
             else:
                 index = weapon_combo.findData(weapon_name)
                 if index >= 0:
-                    # Update combo box
                     weapon_combo.setCurrentIndex(index)
 
-                    # Update weapon parameters directly
                     weapon = self.config_service.get_weapon_profile(weapon_name)
                     if weapon:
                         self.config_tab.params_section.param_controls['multiple'].setValue(weapon.multiple)
                         self.config_tab.params_section.param_controls['sleep_divider'].setValue(weapon.sleep_divider)
                         self.config_tab.params_section.param_controls['sleep_suber'].setValue(weapon.sleep_suber)
 
-                    # Update visualization
                     self.visualization_tab.update_weapon_visualization(weapon_name)
 
                     self.logger.debug(f"UI synchronized with GSI weapon: {weapon_name}")
@@ -420,7 +403,6 @@ class MainWindow(QMainWindow):
             weapon_combo = self.config_tab.global_weapon_section.weapon_combo
 
             if not weapon_name:
-                # Clear selection and parameters
                 weapon_combo.setCurrentIndex(0)
                 self.config_tab.params_section.param_controls['multiple'].setValue(0)
                 self.config_tab.params_section.param_controls['sleep_divider'].setValue(1.0)
@@ -431,7 +413,6 @@ class MainWindow(QMainWindow):
 
             index = weapon_combo.findData(weapon_name)
             if index >= 0:
-                # Update combo box
                 weapon_combo.setCurrentIndex(index)
 
                 # Update weapon parameters directly without triggering signals
@@ -452,7 +433,6 @@ class MainWindow(QMainWindow):
 
     def _update_status(self, status: Dict[str, Any]):
         """Update RCS operational status display with GSI sync."""
-        # Get status information
         active = status.get('active', False)
         weapon_name = status.get('current_weapon', '')
 
@@ -476,7 +456,6 @@ class MainWindow(QMainWindow):
             self.sync_ui_with_gsi_weapon(weapon_name)
         else:
             weapon_text = "None"
-            # Clear UI weapon selection when no weapon is set
             self._clear_ui_weapon_selection()
 
         self.control_panel.weapon_label.setText(
@@ -484,13 +463,11 @@ class MainWindow(QMainWindow):
 
         # Control button state management
         manual_activation_allowed = status.get('manual_activation_allowed', True)
-        # Enable start button when manual activation allowed and not active
         # Weapon validation will be handled in _start_compensation() with user feedback
         start_enabled = manual_activation_allowed and not active
         stop_enabled = active
         self._update_manual_controls_state(start_enabled, stop_enabled)
 
-        # Update GSI status
         self.gsi_status_update_signal.emit()
 
     def _update_gsi_status(self):
@@ -551,12 +528,10 @@ class MainWindow(QMainWindow):
 
     def _on_settings_saved(self):
         """Handle settings save event with dynamic reconfiguration."""
-        # Update TTS configuration dynamically
         features = self.config_service.config.get("features", {})
         tts_enabled = features.get("tts_enabled", True)
         self.recoil_service.configure_tts(tts_enabled)
 
-        # Update Auto Accept configuration if service available
         if self.auto_accept_service:
             auto_accept_enabled = features.get("auto_accept_enabled", False)
             if auto_accept_enabled:
@@ -564,7 +539,6 @@ class MainWindow(QMainWindow):
             else:
                 self.auto_accept_service.disable()
 
-        # Update GSI configuration if service available
         if self.weapon_detection_service:
             gsi_config = self.config_service.config.get("gsi", {})
             self.weapon_detection_service.configure(gsi_config)
@@ -605,7 +579,6 @@ class MainWindow(QMainWindow):
             )
 
             if auto_detection_active:
-                # Disable manual controls when automatic detection is active
                 self.control_panel.start_button.setEnabled(False)
                 self.control_panel.stop_button.setEnabled(False)
 
@@ -622,7 +595,6 @@ class MainWindow(QMainWindow):
                 # Re-enable weapon selection controls
                 self.config_tab.set_weapon_controls_enabled(True)
 
-                # Restore normal tooltips
                 self.control_panel.start_button.setToolTip("Start recoil compensation")
                 self.control_panel.stop_button.setToolTip("Stop recoil compensation")
 
@@ -632,18 +604,15 @@ class MainWindow(QMainWindow):
     def closeEvent(self, a0: Optional[QCloseEvent]):
         """Handle window close event with comprehensive cleanup."""
         try:
-            # Stop active compensation
             if self.recoil_service.active:
                 self.recoil_service.stop_compensation()
 
-            # GSI services cleanup
             if self.weapon_detection_service and self.weapon_detection_service.enabled:
                 self.weapon_detection_service.disable()
 
             if self.gsi_service and self.gsi_service.is_running:
                 self.gsi_service.stop_server()
 
-            # Bomb timer cleanup
             if self.bomb_timer_service:
                 self.bomb_timer_service.stop()
 

@@ -177,12 +177,10 @@ class ConfigService:
         self.csv_repository = csv_repository
         self.weapon_manager = WeaponManager(csv_repository)
 
-        # Configuration data
         self.config = {}
         self.weapon_profiles: Dict[str, WeaponProfile] = {}
         self.hotkeys = {}
 
-        # Load initial configuration
         self.load_config()
 
     def load_config(self) -> bool:

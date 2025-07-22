@@ -420,7 +420,6 @@ class GSIService:
             state = player_data.get("state", {})
             weapons_data = player_data.get("weapons", {})
 
-            # Extract bomb state
             round_data = gsi_data.get("round", {})
             bomb_planted = round_data.get("bomb", "") == "planted"
 

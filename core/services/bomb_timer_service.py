@@ -21,30 +21,24 @@ class BombTimerService(QObject):
         self.logger = logging.getLogger("BombTimerService")
         self.config_service = config_service
 
-        # Bomb timer state
         self.bomb_planted_time: Optional[float] = None
         self.bomb_timer_active = False
         self.bomb_defused = False
         self.bomb_exploded = False
 
-        # Timer constants (in seconds)
         self.BOMB_TIMER_DURATION = 40.0
         self.DEFUSE_TIME_WITH_KIT = 5.0
         self.DEFUSE_TIME_WITHOUT_KIT = 10.0
 
-        # Player state
         self.has_defuse_kit = False
         self.current_player_state: Optional[PlayerState] = None
 
-        # Callbacks
         self.timer_update_callback: Optional[Callable[[float, bool, bool], None]] = None
         self.defuse_alert_callback: Optional[Callable[[bool], None]] = None
 
-        # Qt Timer for smooth updates
         self.qt_timer = QTimer(self)
         self.qt_timer.timeout.connect(self._timer_update)
 
-        # Connect signals to slots (thread-safe)
         self.bomb_planted_signal.connect(self._start_bomb_timer)
         self.bomb_defused_signal.connect(self._stop_bomb_timer)
         self.timer_update_signal.connect(self._emit_callback)
@@ -68,14 +62,12 @@ class BombTimerService(QObject):
     def process_player_state(self, player_state: PlayerState) -> None:
         """Process player state updates from GSI - can be called from any thread."""
         try:
-            # Check if feature is enabled
             if not self.is_enabled():
                 return
 
             self.current_player_state = player_state
             self.has_defuse_kit = player_state.has_defuse_kit
 
-            # Handle bomb plant/defuse events using signals (thread-safe)
             if player_state.bomb_planted and not self.bomb_timer_active:
                 self.bomb_planted_signal.emit()
             elif not player_state.bomb_planted and self.bomb_timer_active:

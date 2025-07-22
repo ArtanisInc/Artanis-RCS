@@ -92,11 +92,9 @@ class PatternCalculator:
         x_min, x_max = positions[:, 0].min(), positions[:, 0].max()
         y_min, y_max = positions[:, 1].min(), positions[:, 1].max()
 
-        # Ensure minimum range
         x_range = max(abs(x_max - x_min), PlotConfiguration.MIN_RANGE)
         y_range = max(abs(y_max - y_min), PlotConfiguration.MIN_RANGE)
 
-        # Apply padding
         x_min_padded = x_min - x_range * padding
         x_max_padded = x_max + x_range * padding
         y_min_padded = y_min - y_range * padding
@@ -198,19 +196,15 @@ class PatternVisualizer(FigureCanvasQTAgg):
         """
         self.logger = logging.getLogger("PatternVisualizer")
 
-        # Create matplotlib figure
         self.fig = Figure(figsize=(width, height), dpi=dpi)
         self.axes = self.fig.add_subplot(111)
 
-        # Initialize parent class
         super().__init__(self.fig)
         self.setParent(parent)
 
-        # Widget configuration
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.updateGeometry()
 
-        # Pattern data and display settings
         self.pattern_data: List[RecoilData] = []
         self.show_points = True
         self.show_numbers = False
@@ -220,12 +214,10 @@ class PatternVisualizer(FigureCanvasQTAgg):
         self.line_width = PlotConfiguration.DEFAULT_LINE_WIDTH
         self.point_size = PlotConfiguration.DEFAULT_POINT_SIZE
 
-        # Components (RENAMED to avoid matplotlib conflict)
         self.calculator = PatternCalculator()
         self.plot_renderer = PlotRenderer(
             self.axes)  # RENAMED from self.renderer
 
-        # Initial setup
         self.plot_renderer._setup_axes()
         self.fig.tight_layout()
 
