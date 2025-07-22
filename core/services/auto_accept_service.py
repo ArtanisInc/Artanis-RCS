@@ -41,9 +41,6 @@ class AutoAcceptService(QObject):
         self.waiting_time = 5  # Default waiting time in seconds
         self.target_color = (54, 183, 82)  # Green Accept button color
         self.color_tolerance = 20
-        self.click_delay_ms = 50
-
-        self._load_config()
 
         self.match_found_signal.connect(self._on_match_found_signal)
 
@@ -51,27 +48,6 @@ class AutoAcceptService(QObject):
         self.console_monitor.register_callback('match_found', self._on_match_found_in_console)
 
         self.logger.info("Auto Accept Service initialized")
-
-    def _load_config(self):
-        """Load configuration from config service."""
-        try:
-            if not self.config_service:
-                return
-
-            config = self.config_service.config
-
-            # Load advanced configuration from auto_accept section (if it exists)
-            auto_accept_config = config.get("auto_accept", {})
-            self.waiting_time = auto_accept_config.get("waiting_time", 5)
-            self.target_color = tuple(auto_accept_config.get("target_color", [54, 183, 82]))
-            self.color_tolerance = auto_accept_config.get("color_tolerance", 20)
-            self.click_delay_ms = auto_accept_config.get("click_delay_ms", 50)
-
-            self.logger.debug(f"Auto Accept config loaded: waiting_time={self.waiting_time}, "
-                            f"target_color={self.target_color}, tolerance={self.color_tolerance}")
-
-        except Exception as e:
-            self.logger.error(f"Error loading Auto Accept configuration: {e}")
 
     def should_be_enabled(self) -> bool:
         """Check if Auto Accept should be enabled based on features configuration."""
@@ -350,25 +326,3 @@ class AutoAcceptService(QObject):
     def is_accepting(self) -> bool:
         """Check if currently accepting a match."""
         return self.accepting_in_progress
-
-
-
-    def update_config(self, config: Dict[str, Any]):
-        """Update Auto Accept configuration."""
-        try:
-            if "waiting_time" in config:
-                self.waiting_time = config["waiting_time"]
-
-            if "target_color" in config:
-                self.target_color = tuple(config["target_color"])
-
-            if "color_tolerance" in config:
-                self.color_tolerance = config["color_tolerance"]
-
-            if "click_delay_ms" in config:
-                self.click_delay_ms = config["click_delay_ms"]
-
-            self.logger.info("Auto Accept configuration updated")
-
-        except Exception as e:
-            self.logger.error(f"Error updating Auto Accept configuration: {e}")
