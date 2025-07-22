@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QTabWidget,
     QGroupBox, QFrame
 )
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QCloseEvent, QFont
 
 from core.services.recoil_service import RecoilService
@@ -152,6 +152,7 @@ class ControlPanel:
 
 class MainWindow(QMainWindow):
     """Main application window."""
+    gsi_status_update_signal = pyqtSignal()
 
     def __init__(
             self,
@@ -179,11 +180,6 @@ class MainWindow(QMainWindow):
 
         # Bomb timer overlay
         self.bomb_timer_overlay = BombTimerOverlay()
-
-        # Periodic GSI status update timer
-        self.status_timer = QTimer()
-        self.status_timer.timeout.connect(self._update_gsi_status)
-        self.status_timer.start(1000)  # 1Hz update frequency
 
         self._setup_ui()
         self._setup_connections()
@@ -286,6 +282,7 @@ class MainWindow(QMainWindow):
         self.config_tab.settings_saved.connect(self._on_settings_saved)
         self.config_tab.hotkeys_updated.connect(self._on_hotkeys_updated)
         self.tabs.currentChanged.connect(self._on_tab_changed)
+        self.gsi_status_update_signal.connect(self._update_gsi_status)
 
     def _on_weapon_changed(self, weapon_name: str):
         """Handle weapon selection change event from config tab."""
@@ -493,6 +490,9 @@ class MainWindow(QMainWindow):
         stop_enabled = active
         self._update_manual_controls_state(start_enabled, stop_enabled)
 
+        # Update GSI status
+        self.gsi_status_update_signal.emit()
+
     def _update_gsi_status(self):
         """Update GSI subsystem status with granular information."""
         try:
@@ -632,10 +632,6 @@ class MainWindow(QMainWindow):
     def closeEvent(self, a0: Optional[QCloseEvent]):
         """Handle window close event with comprehensive cleanup."""
         try:
-            # Stop periodic timers
-            if hasattr(self, 'status_timer'):
-                self.status_timer.stop()
-
             # Stop active compensation
             if self.recoil_service.active:
                 self.recoil_service.stop_compensation()
