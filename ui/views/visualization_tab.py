@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QPushButton, QFileDialog, QMessageBox
 )
 from PySide6.QtCore import QTimer, Signal
-from matplotlib.backends.backend_qt import NavigationToolbar2QT
+from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
 from ui.widgets.pattern_visualizer import PatternVisualizer
