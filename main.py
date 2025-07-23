@@ -7,8 +7,8 @@ import time
 import os
 from typing import Tuple
 
-from PyQt5.QtWidgets import QApplication, QMessageBox
-from PyQt5.QtCore import QTimer
+from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtCore import QTimer
 import qdarktheme
 
 from core.services.hotkey_service import HotkeyService, HotkeyAction
@@ -21,7 +21,7 @@ from core.services.auto_accept_service import AutoAcceptService
 
 def setup_dark_theme(app: QApplication, theme: str = "dark") -> bool:
     """
-    Setup PyQtDarkTheme with version compatibility.
+    Setup qdarktheme with PySide6 compatibility.
 
     Args:
         app: QApplication instance
@@ -37,10 +37,10 @@ def setup_dark_theme(app: QApplication, theme: str = "dark") -> bool:
             app.setStyleSheet(qdarktheme.load_stylesheet(theme))
             return True
         else:
-            print("Warning: PyQtDarkTheme API methods not found")
+            print("Warning: qdarktheme API methods not found")
             return False
     except Exception as e:
-        print(f"Warning: Failed to apply PyQtDarkTheme: {e}")
+        print(f"Warning: Failed to apply qdarktheme: {e}")
         return False
 
 
@@ -339,9 +339,9 @@ def main():
     try:
         app = QApplication(sys.argv)
 
-        # Apply PyQtDarkTheme with version compatibility
+        # Apply qdarktheme with version compatibility
         if not setup_dark_theme(app, "dark"):
-            logger.warning("Failed to apply PyQtDarkTheme, using default styling")
+            logger.warning("Failed to apply qdarktheme, using default styling")
 
         (config_service, input_service, recoil_service, hotkey_service,
          tts_service, gsi_service,

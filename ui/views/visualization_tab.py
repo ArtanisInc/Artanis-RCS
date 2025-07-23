@@ -5,12 +5,12 @@ import logging
 import time
 from typing import List, Optional
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QCheckBox, QComboBox,
     QPushButton, QFileDialog, QMessageBox
 )
-from PyQt5.QtCore import QTimer, pyqtSignal
+from PySide6.QtCore import QTimer, Signal
 from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
@@ -94,7 +94,7 @@ class VisualizationTab(QWidget):
     """Visualization tab with externalized styles and modular controls."""
 
     # Signal for thread-safe weapon updates
-    _weapon_update_requested = pyqtSignal(str)
+    _weapon_update_requested = Signal(str)
 
     def __init__(self, config_service: ConfigService):
         super().__init__()

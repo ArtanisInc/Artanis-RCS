@@ -7,7 +7,7 @@ from typing import List, Tuple, Optional
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from PyQt5.QtWidgets import QSizePolicy
+from PySide6.QtWidgets import QSizePolicy
 
 from core.models.recoil_data import RecoilData
 

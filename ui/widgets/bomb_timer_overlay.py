@@ -3,17 +3,17 @@ Bomb Timer Overlay Widget for CS2 bomb countdown display.
 """
 import logging
 from typing import Optional
-from PyQt5.QtWidgets import QWidget, QApplication
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal
-from PyQt5.QtGui import QPainter, QPen, QBrush, QFont, QColor, QFontMetrics, QPaintEvent, QCloseEvent
+from PySide6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QPainter, QPen, QBrush, QFont, QColor, QFontMetrics, QPaintEvent, QCloseEvent
 
 
 class BombTimerOverlay(QWidget):
     """Overlay widget displaying bomb countdown timer with circular progress."""
 
     # Signals
-    timer_expired = pyqtSignal()
-    defuse_alert = pyqtSignal(bool)  # can_defuse
+    timer_expired = Signal()
+    defuse_alert = Signal(bool)  # can_defuse
 
     def __init__(self, parent=None):
         super().__init__(parent)

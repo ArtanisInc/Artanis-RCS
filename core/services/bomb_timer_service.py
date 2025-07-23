@@ -4,7 +4,7 @@ Bomb Timer Service for CS2 bomb countdown and defuse kit alerts.
 import logging
 import time
 from typing import Optional, Callable
-from PyQt5.QtCore import QTimer, QObject, pyqtSignal
+from PySide6.QtCore import QTimer, QObject, Signal
 from core.models.player_state import PlayerState
 
 
@@ -12,9 +12,9 @@ class BombTimerService(QObject):
     """Service for tracking bomb timer and defuse kit alerts using Qt signals."""
 
     # Qt signals for thread-safe communication
-    bomb_planted_signal = pyqtSignal()
-    bomb_defused_signal = pyqtSignal()
-    timer_update_signal = pyqtSignal(float, bool, bool)  # remaining_time, has_kit, can_defuse
+    bomb_planted_signal = Signal()
+    bomb_defused_signal = Signal()
+    timer_update_signal = Signal(float, bool, bool)  # remaining_time, has_kit, can_defuse
 
     def __init__(self, config_service=None):
         super().__init__()

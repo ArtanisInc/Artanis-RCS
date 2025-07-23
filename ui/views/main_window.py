@@ -4,13 +4,13 @@ Main application window with modular architecture.
 import logging
 from typing import Dict, Any, Optional
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QMessageBox, QTabWidget,
     QGroupBox, QFrame
 )
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QCloseEvent, QFont
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QCloseEvent, QFont
 
 from core.services.recoil_service import RecoilService
 from core.services.config_service import ConfigService
@@ -150,7 +150,7 @@ class ControlPanel:
 
 class MainWindow(QMainWindow):
     """Main application window."""
-    gsi_status_update_signal = pyqtSignal()
+    gsi_status_update_signal = Signal()
 
     def __init__(
             self,

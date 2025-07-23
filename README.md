@@ -24,7 +24,7 @@
 * Instant pattern switching
 
 🖥️ **Advanced User Interface**
-* Modern, intuitive PyQt5 GUI with PyQtDarkTheme
+* Modern, intuitive PySide6 GUI with qdarktheme
 * Recoil pattern visualization
 * Live system status and configuration management
 
@@ -96,8 +96,8 @@ artanis-rcs/
 - **Python**: Version 3.9 or higher
 
 ### **Dependencies**
-- **PyQt5**: Modern GUI framework for user interface
-- **PyQtDarkTheme**: A flat dark theme for PySide and PyQt
+- **PySide6**: Modern GUI framework for user interface
+- **qdarktheme**: A flat dark theme for PySide and PyQt
 - **matplotlib**: Pattern visualization and mathematical plotting
 - **numpy**: Mathematical calculations and array operations
 - **pywin32**: Windows API integration for input simulation and window management

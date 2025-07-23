@@ -5,7 +5,7 @@ import logging
 import time
 import threading
 from typing import Optional, Dict, Any
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 import win32api
 import win32con
 import win32gui
@@ -18,9 +18,9 @@ class AutoAcceptService(QObject):
     """Service for automatically accepting CS2 matches when found."""
 
     # Qt signals for thread-safe communication
-    match_found_signal = pyqtSignal()
-    match_accepted_signal = pyqtSignal()
-    status_update_signal = pyqtSignal(str)  # Status message
+    match_found_signal = Signal()
+    match_accepted_signal = Signal()
+    status_update_signal = Signal(str)  # Status message
 
     def __init__(self, config_service, input_service, tts_service=None):
         super().__init__()
