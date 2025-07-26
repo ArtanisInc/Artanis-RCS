@@ -392,7 +392,7 @@ def main():
         logger.info("=== RCS System Started ===")
         tts_service.speak("RCS system ready")
 
-        sys.exit(app.exec_())
+        sys.exit(app.exec())
 
     except Exception as e:
         logger.critical("Fatal error: %s", e, exc_info=True)
