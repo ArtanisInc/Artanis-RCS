@@ -203,12 +203,12 @@ class HotkeysSection(ConfigSection):
         main_layout.setSpacing(8)
 
         # System hotkeys sub-group
-        self.system_group = QGroupBox("SYSTEM")
+        self.system_group = QGroupBox("System")
         self.system_group.setMaximumHeight(110)
         main_layout.addWidget(self.system_group)
 
         # Weapon hotkeys sub-group
-        self.weapon_group = QGroupBox("WEAPONS")
+        self.weapon_group = QGroupBox("Weapons")
         self.weapon_group.setMaximumHeight(130)
         main_layout.addWidget(self.weapon_group)
 
