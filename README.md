@@ -97,7 +97,7 @@ artanis-rcs/
 
 ### **Dependencies**
 - **PySide6**: Modern GUI framework for user interface
-- **qdarktheme**: A flat dark theme for PySide and PyQt
+- **PyQtDarkTheme**: A flat dark theme for PySide and PyQt
 - **matplotlib**: Pattern visualization and mathematical plotting
 - **numpy**: Mathematical calculations and array operations
 - **pywin32**: Windows API integration for input simulation and window management
