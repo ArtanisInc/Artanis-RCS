@@ -1,6 +1,6 @@
-PyQt5
+PySide6
 matplotlib
 numpy
 pywin32
-pyqtdarktheme
+PyQtDarkTheme
 dxcam

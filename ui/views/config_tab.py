@@ -4,13 +4,13 @@ Configuration tab for the user interface.
 import logging
 from typing import Tuple, List
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QComboBox, QSpinBox, QDoubleSpinBox, QPushButton,
     QGroupBox, QCheckBox, QMessageBox
 )
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFont
 
 from core.services.config_service import ConfigService
 
@@ -353,9 +353,9 @@ class HotkeysSection(ConfigSection):
 class ConfigTab(QWidget):
     """Configuration tab with modular architecture."""
 
-    weapon_changed = pyqtSignal(str)
-    settings_saved = pyqtSignal()
-    hotkeys_updated = pyqtSignal()
+    weapon_changed = Signal(str)
+    settings_saved = Signal()
+    hotkeys_updated = Signal()
 
     def __init__(self, config_service: ConfigService):
         super().__init__()
