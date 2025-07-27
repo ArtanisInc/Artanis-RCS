@@ -49,12 +49,12 @@ class ControlPanel:
     def _create_status_section(self) -> QFrame:
         """Create RCS status display section."""
         frame = QFrame()
-        frame.setFrameStyle(QFrame.StyledPanel)
+        frame.setFrameStyle(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(8, 6, 8, 6)
 
         title = QLabel("RCS Status")
-        title.setFont(QFont("Arial", 9, QFont.Bold))
+        title.setFont(QFont("Arial", 9, QFont.Weight.Bold))
         layout.addWidget(title)
 
         self.status_label = QLabel("🔴 Inactive")
@@ -71,12 +71,12 @@ class ControlPanel:
     def _create_controls_section(self) -> QFrame:
         """Create control buttons section."""
         frame = QFrame()
-        frame.setFrameStyle(QFrame.StyledPanel)
+        frame.setFrameStyle(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(8, 6, 8, 6)
 
         title = QLabel("Actions")
-        title.setFont(QFont("Arial", 9, QFont.Bold))
+        title.setFont(QFont("Arial", 9, QFont.Weight.Bold))
         layout.addWidget(title)
 
         buttons_layout = QHBoxLayout()
@@ -98,12 +98,12 @@ class ControlPanel:
     def _create_gsi_status_section(self) -> QFrame:
         """Create dedicated GSI status display section."""
         frame = QFrame()
-        frame.setFrameStyle(QFrame.StyledPanel)
+        frame.setFrameStyle(QFrame.Shape.StyledPanel)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(8, 6, 8, 6)
 
         title = QLabel("GSI Status")
-        title.setFont(QFont("Arial", 9, QFont.Bold))
+        title.setFont(QFont("Arial", 9, QFont.Weight.Bold))
         layout.addWidget(title)
 
         # Separated GSI status indicators
@@ -126,7 +126,7 @@ class ControlPanel:
         """Create styled action button."""
         button = QPushButton(text)
         button.setMinimumHeight(30)
-        button.setFont(QFont("Arial", 9, QFont.Bold))
+        button.setFont(QFont("Arial", 9, QFont.Weight.Bold))
 
         button.setStyleSheet(f"""
             QPushButton {{
@@ -244,13 +244,13 @@ class MainWindow(QMainWindow):
 
         # UI separator
         separator = QFrame()
-        separator.setFrameShape(QFrame.HLine)
-        separator.setFrameShadow(QFrame.Sunken)
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
         main_layout.addWidget(separator)
 
         # Tab widget for configuration and visualization
         self.tabs = QTabWidget()
-        self.tabs.setTabPosition(QTabWidget.North)
+        self.tabs.setTabPosition(QTabWidget.TabPosition.North)
 
         self.config_tab = ConfigTab(self.config_service)
         self.visualization_tab = VisualizationTab(self.config_service)

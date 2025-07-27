@@ -187,7 +187,9 @@ class ConsoleLogMonitorService:
     def _extract_match_id(self, line: str) -> str:
         """Extract match ID from console line."""
         match_id_match = self.match_id_pattern.search(line)
-        return match_id_match.group(1)
+        if match_id_match is not None:
+            return match_id_match.group(1)
+        return ""
 
     def _trigger_callback(self, event_type: str, data):
         """Trigger registered callback."""

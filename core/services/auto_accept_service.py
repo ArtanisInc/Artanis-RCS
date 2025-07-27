@@ -4,7 +4,7 @@ Auto Accept Service for automatically accepting CS2 matches.
 import logging
 import time
 import threading
-from typing import Optional, Dict, Any
+from typing import Optional
 from PySide6.QtCore import QObject, Signal
 import win32api
 import win32con

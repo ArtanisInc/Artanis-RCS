@@ -18,11 +18,13 @@ from core.services.config_service import ConfigService
 class ConfigSection:
     """Base configuration section with common styling."""
 
+
     @staticmethod
     def create_styled_label(text: str, bold: bool = False) -> QLabel:
         """Create consistently styled label."""
         label = QLabel(text)
-        font = QFont("Arial", 10, QFont.Bold if bold else QFont.Normal)
+        font = QFont("Arial", 10)
+        font.setWeight(QFont.Weight.Bold if bold else QFont.Weight.Normal)
         label.setFont(font)
         return label
 
@@ -432,19 +434,19 @@ class ConfigTab(QWidget):
         """Load weapons into combo boxes."""
         current_weapon = self.global_weapon_section.weapon_combo.currentData()
 
+
         self.global_weapon_section.weapon_combo.clear()
         self.hotkeys_section.weapon_hotkey_combo.clear()
 
-        self.global_weapon_section.weapon_combo.addItem(
-            "Select a weapon...", "")
-        self.hotkeys_section.weapon_hotkey_combo.addItem(
-            "Select a weapon...", "")
+        self.global_weapon_section.weapon_combo.addItem("Select a weapon...", userData="")
+        self.hotkeys_section.weapon_hotkey_combo.addItem("Select a weapon...", userData="")
 
         for name in self.config_service.weapon_profiles.keys():
             display_name = self.config_service.get_weapon_display_name(name)
-            self.global_weapon_section.weapon_combo.addItem(display_name, name)
-            self.hotkeys_section.weapon_hotkey_combo.addItem(
-                display_name, name)
+            display_name_str = str(display_name) if display_name is not None else ""
+            name_str = str(name) if name is not None else ""
+            self.global_weapon_section.weapon_combo.addItem(display_name_str, userData=name_str)
+            self.hotkeys_section.weapon_hotkey_combo.addItem(display_name_str, userData=name_str)
 
         # Restore selection
         if current_weapon:

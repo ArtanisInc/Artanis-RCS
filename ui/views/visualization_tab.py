@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QPushButton, QFileDialog, QMessageBox
 )
 from PySide6.QtCore import QTimer, Signal
-from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
+from matplotlib.backends.backend_qt import NavigationToolbar2QT
 
 from core.services.config_service import ConfigService
 from ui.widgets.pattern_visualizer import PatternVisualizer
@@ -297,13 +297,11 @@ class VisualizationTab(QWidget):
                 default_filename = "pattern.png"
 
             # File dialog
-            options = QFileDialog.Options()
             filename, _ = QFileDialog.getSaveFileName(
                 self,
                 "Export Figure",
                 default_filename,
-                "PNG Images (*.png);;JPEG Images (*.jpg);;PDF Documents (*.pdf);;SVG Images (*.svg)",
-                options=options
+                "PNG Images (*.png);;JPEG Images (*.jpg);;PDF Documents (*.pdf);;SVG Images (*.svg)"
             )
 
             if not filename:

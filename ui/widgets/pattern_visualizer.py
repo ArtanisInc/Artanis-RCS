@@ -202,7 +202,7 @@ class PatternVisualizer(FigureCanvasQTAgg):
         super().__init__(self.fig)
         self.setParent(parent)
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.updateGeometry()
 
         self.pattern_data: List[RecoilData] = []

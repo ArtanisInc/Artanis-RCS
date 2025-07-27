@@ -3,12 +3,11 @@ Recoil Compensation System.
 """
 import sys
 import logging
-import time
 import os
 from typing import Tuple
 
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, QMetaObject, Qt
 import qdarktheme
 
 from core.services.hotkey_service import HotkeyService, HotkeyAction
@@ -181,7 +180,7 @@ def setup_gsi_integration(gsi_service: GSIService,
         return False
 
 
-def create_gui(config_service, recoil_service, hotkey_service, tts_service,
+def create_gui(app: QApplication, config_service, recoil_service, hotkey_service, tts_service,
                gsi_service=None, weapon_detection_service=None, bomb_timer_service=None, auto_accept_service=None):
     """Create main GUI window."""
     from ui.views.main_window import MainWindow
@@ -203,7 +202,7 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
         if auto_accept_service:
             window.set_auto_accept_service(auto_accept_service)
 
-        setup_hotkey_callbacks(window, recoil_service, hotkey_service,
+        setup_hotkey_callbacks(app, window, recoil_service, hotkey_service,
                                tts_service, weapon_detection_service)
 
         logger.info("GUI initialized: Main window, Config tab, Visualization tab")
@@ -214,7 +213,7 @@ def create_gui(config_service, recoil_service, hotkey_service, tts_service,
         raise
 
 
-def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
+def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotkey_service,
                            tts_service, weapon_detection_service=None, auto_accept_service=None):
     """Configure hotkey callbacks with TTS coordination."""
     logger = logging.getLogger("HotkeySetup")
@@ -278,9 +277,8 @@ def setup_hotkey_callbacks(main_window, recoil_service, hotkey_service,
     def exit_action():
         """Exit application."""
         logger.debug("Closing application via hotkey")
+        QMetaObject.invokeMethod(app, 'quit', Qt.ConnectionType.QueuedConnection)
         tts_service.speak("Closing script")
-        time.sleep(1.5)
-        main_window.close()
 
     def weapon_select_action(weapon_name: str):
         """Select weapon via hotkey with conditional TTS announcement."""
@@ -359,7 +357,7 @@ def main():
             gsi_service = None
             weapon_detection_service = None
 
-        window = create_gui(config_service, recoil_service, hotkey_service,
+        window = create_gui(app, config_service, recoil_service, hotkey_service,
                             tts_service, gsi_service, weapon_detection_service,
                             bomb_timer_service, auto_accept_service)
         window.show()
@@ -372,20 +370,59 @@ def main():
             """Clean shutdown with GSI cleanup."""
             logger.debug("Cleaning up on exit...")
             try:
+                logger.debug("Stopping hotkey service...")
                 hotkey_service.stop_monitoring()
-                if recoil_service.active:
-                    recoil_service.stop_compensation()
-                if weapon_detection_service:
-                    weapon_detection_service.disable()
-                if gsi_service:
-                    gsi_service.stop_server()
-                if bomb_timer_service:
-                    bomb_timer_service.stop()
-                if auto_accept_service:
-                    auto_accept_service.disable()
-                tts_service.stop()
+                logger.debug("Hotkey service stopped.")
             except Exception as e:
-                logger.error("Cleanup error: %s", e)
+                logger.error("Error stopping hotkey service: %s", e)
+
+            try:
+                if recoil_service.active:
+                    logger.debug("Stopping recoil compensation...")
+                    recoil_service.stop_compensation()
+                    logger.debug("Recoil compensation stopped.")
+            except Exception as e:
+                logger.error("Error stopping recoil compensation: %s", e)
+
+            try:
+                if weapon_detection_service:
+                    logger.debug("Disabling weapon detection service...")
+                    weapon_detection_service.disable()
+                    logger.debug("Weapon detection service disabled.")
+            except Exception as e:
+                logger.error("Error disabling weapon detection service: %s", e)
+
+            try:
+                if gsi_service:
+                    logger.debug("Stopping GSI service...")
+                    gsi_service.stop_server()
+                    logger.debug("GSI service stopped.")
+            except Exception as e:
+                logger.error("Error stopping GSI service: %s", e)
+
+            try:
+                if bomb_timer_service:
+                    logger.debug("Stopping bomb timer service...")
+                    bomb_timer_service.stop()
+                    logger.debug("Bomb timer service stopped.")
+            except Exception as e:
+                logger.error("Error stopping bomb timer service: %s", e)
+
+            try:
+                if auto_accept_service:
+                    logger.debug("Disabling auto accept service...")
+                    auto_accept_service.disable()
+                    logger.debug("Auto accept service disabled.")
+            except Exception as e:
+                logger.error("Error disabling auto accept service: %s", e)
+
+            try:
+                logger.debug("Stopping TTS service...")
+                tts_service.stop()
+                logger.debug("TTS service stopped.")
+            except Exception as e:
+                logger.error("Error stopping TTS service: %s", e)
+            logger.debug("Cleanup complete.")
 
         app.aboutToQuit.connect(cleanup_on_exit)
 
