@@ -135,7 +135,7 @@ def initialize_system() -> Tuple:
             "Weapon Detection",
             "Bomb Timer",
             "Auto Accept",
-            f"Hotkeys ({len(hotkey_service.hotkey_mappings)} active)"
+            f"Hotkeys ({hotkey_service.get_active_hotkey_count()} active)"
         ]
         logger.info("Core services initialized: %s", ", ".join(services_summary))
 
@@ -362,9 +362,34 @@ def main():
                             bomb_timer_service, auto_accept_service)
         window.show()
 
+        # Setup error callback for fatal background errors
+        def handle_background_error(exception: Exception, context: str):
+            """Handle fatal background errors by logging and optionally notifying user."""
+            logger.critical("Fatal background error in %s: %s", context, exception, exc_info=True)
+            # Could add user notification here if needed, e.g.:
+            # QMessageBox.warning(window, "Background Error", f"Error in {context}: {str(exception)}")
+        
+        hotkey_service.set_error_callback(handle_background_error)
+
+        # Setup periodic processing of queued callbacks for thread safety
         timer = QTimer(app)
-        timer.timeout.connect(lambda: None)
-        timer.start(100)
+        
+        def process_background_operations():
+            """Process background callbacks and error handling."""
+            try:
+                # Process queued UI callbacks from background threads
+                hotkey_service.process_background_callbacks()
+                
+                # Check for any background errors
+                errors = hotkey_service.get_background_errors()
+                for exception, context in errors:
+                    logger.error("Background error in %s: %s", context, exception, exc_info=True)
+                    
+            except Exception as e:
+                logger.error("Error processing background operations: %s", e, exc_info=True)
+        
+        timer.timeout.connect(process_background_operations)
+        timer.start(50)  # Process every 50ms for responsive UI
 
         def cleanup_on_exit():
             """Clean shutdown with GSI cleanup."""
