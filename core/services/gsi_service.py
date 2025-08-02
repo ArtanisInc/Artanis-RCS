@@ -147,27 +147,15 @@ class GSIConfigService:
 {{
     "uri"                   "{uri}"
     "timeout"               "5.0"
-    "buffer"                "0.0"
+    "buffer"                "0.1"
     "throttle"              "0.1"
     "heartbeat"             "10.0"
     "data"
     {{
-        "provider"              "1"
-        "map"                   "1"
-        "round"                 "1"
-        "player_id"             "1"
         "player_state"          "1"
         "player_weapons"        "1"
-        "player_match_stats"    "1"
-        "allplayers_id"         "0"
-        "allplayers_state"      "0"
-        "allplayers_weapons"    "0"
-        "allplayers_match_stats" "0"
-        "allplayers_position"   "0"
-        "allgrenades"           "0"
+        "round"                 "1"
         "bomb"                  "1"
-        "phase_countdowns"      "1"
-        "player_position"       "0"
     }}
 }}'''
 
