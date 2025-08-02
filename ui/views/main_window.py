@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLabel, QMessageBox, QTabWidget,
     QGroupBox, QFrame
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QCloseEvent, QFont
 
 from core.services.recoil_service import RecoilService
@@ -600,6 +600,98 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             self.logger.error(f"Manual controls state update error: {e}")
+
+    @Slot()
+    def toggle_recoil_action_slot(self):
+        """Slot to toggle recoil compensation."""
+        try:
+            if self.recoil_service.active:
+                success = self.recoil_service.stop_compensation()
+                if not success:
+                    self.logger.error("Failed to stop compensation")
+            else:
+                current_weapon = self.recoil_service.current_weapon
+
+                if not current_weapon:
+                    current_weapon = self.config_tab.get_selected_weapon()
+
+                if not current_weapon:
+                    self.logger.warning("No weapon available")
+                    self.recoil_service.tts_service.speak("No weapon available")
+                    return
+
+                if self.recoil_service.current_weapon != current_weapon:
+                    self.recoil_service.set_weapon(current_weapon)
+
+                success = self.recoil_service.start_compensation(
+                    allow_manual_when_auto_enabled=False)
+
+                if not success:
+                    self.logger.error("Failed to start compensation")
+
+            action_text = "started" if self.recoil_service.active else "stopped"
+            self.logger.debug("Compensation %s via hotkey", action_text)
+
+        except Exception as e:
+            self.logger.error("Toggle compensation error: %s", e)
+
+    @Slot()
+    def toggle_weapon_detection_action_slot(self):
+        """Slot to toggle weapon detection GSI feature."""
+        try:
+            if self.weapon_detection_service:
+                if self.weapon_detection_service.enabled:
+                    success = self.weapon_detection_service.disable()
+                    status_text = "disabled" if success else "disable failed"
+                else:
+                    success = self.weapon_detection_service.enable()
+                    status_text = "enabled" if success else "enable failed"
+
+                self.logger.debug("Weapon detection %s via hotkey", status_text)
+
+                if success:
+                    self.recoil_service.tts_service.speak(f"Weapon detection {status_text}")
+                else:
+                    self.logger.error("Failed to toggle weapon detection")
+            else:
+                self.logger.warning("Weapon detection service not available")
+
+        except Exception as e:
+            self.logger.error("Toggle weapon detection error: %s", e)
+
+    @Slot(str)
+    def weapon_select_action_slot(self, weapon_name: str):
+        """Slot to select weapon via hotkey with conditional TTS announcement."""
+        try:
+            weapon_combo = (self.config_tab.global_weapon_section
+                            .weapon_combo)
+            index = weapon_combo.findData(weapon_name)
+
+            if index >= 0:
+                weapon_combo.setCurrentIndex(index)
+                self.recoil_service.set_weapon(weapon_name)
+
+                # Only announce if automatic weapon detection is not active
+                should_announce = True
+                if (self.weapon_detection_service and
+                        self.weapon_detection_service.enabled):
+                    should_announce = False
+                    self.logger.debug(
+                        "Weapon selection TTS suppressed: auto detection active")
+
+                if should_announce:
+                    weapon_display = (self.config_service
+                                      .get_weapon_display_name(weapon_name))
+                    clean_name = weapon_display.replace(
+                        "-", " ").replace("_", " ")
+                    self.recoil_service.tts_service.speak(clean_name)
+
+                self.logger.debug("Weapon selected via hotkey: %s", weapon_name)
+            else:
+                self.logger.warning("Weapon not found in UI: %s", weapon_name)
+
+        except Exception as e:
+            self.logger.error("Weapon selection error: %s", e)
 
     def closeEvent(self, a0: Optional[QCloseEvent]):
         """Handle window close event with comprehensive cleanup."""

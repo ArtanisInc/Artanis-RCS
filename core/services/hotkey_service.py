@@ -124,42 +124,44 @@ class HotkeyService:
 
         self.hotkey_mappings: Dict[str, int] = {}
         self.weapon_hotkeys: Dict[str, str] = {}
+        self.lock = threading.Lock()
 
         self._update_hotkey_mappings()
         self.logger.debug("Hotkey service initialized")
 
     def _update_hotkey_mappings(self) -> None:
         """Update hotkey mappings from configuration."""
-        try:
-            hotkeys = self.config_service.hotkeys
-            self.hotkey_mappings.clear()
-            self.weapon_hotkeys.clear()
+        with self.lock:
+            try:
+                hotkeys = self.config_service.hotkeys
+                self.hotkey_mappings.clear()
+                self.weapon_hotkeys.clear()
 
-            system_actions = [
-                "toggle_recoil",
-                "toggle_weapon_detection",
-                "exit"]
-            for action in system_actions:
-                key_name = hotkeys.get(action)
-                if key_name:
-                    vk_code = self.input_service.get_key_code(key_name)
-                    if vk_code:
-                        self.hotkey_mappings[action] = vk_code
+                system_actions = [
+                    "toggle_recoil",
+                    "toggle_weapon_detection",
+                    "exit"]
+                for action in system_actions:
+                    key_name = hotkeys.get(action)
+                    if key_name:
+                        vk_code = self.input_service.get_key_code(key_name)
+                        if vk_code:
+                            self.hotkey_mappings[action] = vk_code
 
-            weapon_names = set(self.config_service.weapon_profiles.keys())
-            for weapon_name in weapon_names:
-                key_name = hotkeys.get(weapon_name)
-                if key_name:
-                    vk_code = self.input_service.get_key_code(key_name)
-                    if vk_code:
-                        self.weapon_hotkeys[weapon_name] = key_name
-                        self.hotkey_mappings[weapon_name] = vk_code
+                weapon_names = set(self.config_service.weapon_profiles.keys())
+                for weapon_name in weapon_names:
+                    key_name = hotkeys.get(weapon_name)
+                    if key_name:
+                        vk_code = self.input_service.get_key_code(key_name)
+                        if vk_code:
+                            self.weapon_hotkeys[weapon_name] = key_name
+                            self.hotkey_mappings[weapon_name] = vk_code
 
-            self.logger.debug(
-                "Hotkey mappings updated: %s active", len(self.hotkey_mappings))
+                self.logger.debug(
+                    "Hotkey mappings updated: %s active", len(self.hotkey_mappings))
 
-        except Exception as e:
-            self.logger.error("Failed to update hotkey mappings: %s", e)
+            except Exception as e:
+                self.logger.error("Failed to update hotkey mappings: %s", e)
 
     def register_action_callback(
             self,
@@ -223,11 +225,12 @@ class HotkeyService:
 
         while not self.stop_event.is_set():
             try:
-                # Check each configured hotkey
-                for identifier, vk_code in self.hotkey_mappings.items():
-                    if self.monitor.check_hotkey_triggered(
-                            identifier, vk_code):
-                        self._handle_hotkey_trigger(identifier)
+                with self.lock:
+                    # Check each configured hotkey
+                    for identifier, vk_code in self.hotkey_mappings.items():
+                        if self.monitor.check_hotkey_triggered(
+                                identifier, vk_code):
+                            self._handle_hotkey_trigger(identifier)
 
                 # CPU-friendly polling
                 time.sleep(0.01)  # 10ms polling rate

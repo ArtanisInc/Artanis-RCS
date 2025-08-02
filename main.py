@@ -220,59 +220,17 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
 
     def toggle_recoil_action():
         """Toggle recoil compensation."""
-        try:
-            if recoil_service.active:
-                success = recoil_service.stop_compensation()
-                if not success:
-                    logger.error("Failed to stop compensation")
-            else:
-                current_weapon = recoil_service.current_weapon
-
-                if not current_weapon:
-                    current_weapon = main_window.config_tab.get_selected_weapon()
-
-                if not current_weapon:
-                    logger.warning("No weapon available")
-                    tts_service.speak("No weapon available")
-                    return
-
-                if recoil_service.current_weapon != current_weapon:
-                    recoil_service.set_weapon(current_weapon)
-
-                success = recoil_service.start_compensation(
-                    allow_manual_when_auto_enabled=False)
-
-                if not success:
-                    logger.error("Failed to start compensation")
-
-            action_text = "started" if recoil_service.active else "stopped"
-            logger.debug("Compensation %s via hotkey", action_text)
-
-        except Exception as e:
-            logger.error("Toggle compensation error: %s", e)
+        QMetaObject.invokeMethod(
+            main_window,
+            "toggle_recoil_action_slot",
+            Qt.ConnectionType.QueuedConnection)
 
     def toggle_weapon_detection_action():
         """Toggle weapon detection GSI feature."""
-        try:
-            if weapon_detection_service:
-                if weapon_detection_service.enabled:
-                    success = weapon_detection_service.disable()
-                    status_text = "disabled" if success else "disable failed"
-                else:
-                    success = weapon_detection_service.enable()
-                    status_text = "enabled" if success else "enable failed"
-
-                logger.debug("Weapon detection %s via hotkey", status_text)
-
-                if success:
-                    tts_service.speak(f"Weapon detection {status_text}")
-                else:
-                    logger.error("Failed to toggle weapon detection")
-            else:
-                logger.warning("Weapon detection service not available")
-
-        except Exception as e:
-            logger.error("Toggle weapon detection error: %s", e)
+        QMetaObject.invokeMethod(
+            main_window,
+            "toggle_weapon_detection_action_slot",
+            Qt.ConnectionType.QueuedConnection)
 
     def exit_action():
         """Exit application."""
@@ -282,36 +240,11 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
 
     def weapon_select_action(weapon_name: str):
         """Select weapon via hotkey with conditional TTS announcement."""
-        try:
-            weapon_combo = (main_window.config_tab.global_weapon_section
-                            .weapon_combo)
-            index = weapon_combo.findData(weapon_name)
-
-            if index >= 0:
-                weapon_combo.setCurrentIndex(index)
-                recoil_service.set_weapon(weapon_name)
-
-                # Only announce if automatic weapon detection is not active
-                should_announce = True
-                if (weapon_detection_service and
-                        weapon_detection_service.enabled):
-                    should_announce = False
-                    logger.debug(
-                        "Weapon selection TTS suppressed: auto detection active")
-
-                if should_announce:
-                    weapon_display = (main_window.config_service
-                                      .get_weapon_display_name(weapon_name))
-                    clean_name = weapon_display.replace(
-                        "-", " ").replace("_", " ")
-                    tts_service.speak(clean_name)
-
-                logger.debug("Weapon selected via hotkey: %s", weapon_name)
-            else:
-                logger.warning("Weapon not found in UI: %s", weapon_name)
-
-        except Exception as e:
-            logger.error("Weapon selection error: %s", e)
+        QMetaObject.invokeMethod(
+            main_window,
+            "weapon_select_action_slot",
+            Qt.ConnectionType.QueuedConnection,
+            Q_ARG(str, weapon_name))
 
     try:
         hotkey_service.register_action_callback(HotkeyAction.TOGGLE_RECOIL,

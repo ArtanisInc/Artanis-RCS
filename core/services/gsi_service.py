@@ -233,6 +233,7 @@ class GSIService:
         self.update_callbacks: Dict[str, Callable[[PlayerState], None]] = {}
         self.current_player_state: Optional[PlayerState] = None
         self.connection_status = "Disconnected"
+        self.lock = threading.Lock()
 
         self._payload_cache: Dict[str, Any] = {}
         self._last_payload_hash: Optional[str] = None
@@ -479,14 +480,16 @@ class GSIService:
     def register_callback(
             self, name: str, callback: Callable[[PlayerState], None]) -> None:
         """Register callback for GSI updates."""
-        self.update_callbacks[name] = callback
-        self.logger.debug("Callback registered: %s", name)
+        with self.lock:
+            self.update_callbacks[name] = callback
+            self.logger.debug("Callback registered: %s", name)
 
     def unregister_callback(self, name: str) -> None:
         """Unregister GSI update callback."""
-        if name in self.update_callbacks:
-            del self.update_callbacks[name]
-            self.logger.debug("Callback unregistered: %s", name)
+        with self.lock:
+            if name in self.update_callbacks:
+                del self.update_callbacks[name]
+                self.logger.debug("Callback unregistered: %s", name)
 
     def get_connection_status(self) -> Dict[str, Any]:
         """Get connection status information"""
