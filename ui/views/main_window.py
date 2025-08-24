@@ -617,7 +617,9 @@ class MainWindow(QMainWindow):
 
                 if not current_weapon:
                     self.logger.warning("No weapon available")
-                    self.recoil_service.tts_service.speak("No weapon available")
+                    tts_service = getattr(self.recoil_service, 'tts_service', None)
+                    if tts_service is not None:
+                        tts_service.speak("No weapon available")
                     return
 
                 if self.recoil_service.current_weapon != current_weapon:
@@ -650,7 +652,9 @@ class MainWindow(QMainWindow):
                 self.logger.debug("Weapon detection %s via hotkey", status_text)
 
                 if success:
-                    self.recoil_service.tts_service.speak(f"Weapon detection {status_text}")
+                    tts_service = getattr(self.recoil_service, 'tts_service', None)
+                    if tts_service is not None:
+                        tts_service.speak(f"Weapon detection {status_text}")
                 else:
                     self.logger.error("Failed to toggle weapon detection")
             else:
@@ -682,9 +686,12 @@ class MainWindow(QMainWindow):
                 if should_announce:
                     weapon_display = (self.config_service
                                       .get_weapon_display_name(weapon_name))
-                    clean_name = weapon_display.replace(
-                        "-", " ").replace("_", " ")
-                    self.recoil_service.tts_service.speak(clean_name)
+                    if weapon_display is not None:
+                        clean_name = weapon_display.replace(
+                            "-", " ").replace("_", " ")
+                        tts_service = getattr(self.recoil_service, 'tts_service', None)
+                        if tts_service is not None:
+                            tts_service.speak(clean_name)
 
                 self.logger.debug("Weapon selected via hotkey: %s", weapon_name)
             else:

@@ -7,7 +7,7 @@ import os
 from typing import Tuple
 
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QTimer, QMetaObject, Qt
+from PySide6.QtCore import QTimer
 import qdarktheme
 
 from core.services.hotkey_service import HotkeyService, HotkeyAction
@@ -220,31 +220,21 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
 
     def toggle_recoil_action():
         """Toggle recoil compensation."""
-        QMetaObject.invokeMethod(
-            main_window,
-            "toggle_recoil_action_slot",
-            Qt.ConnectionType.QueuedConnection)
+        QTimer.singleShot(0, main_window.toggle_recoil_action_slot)
 
     def toggle_weapon_detection_action():
         """Toggle weapon detection GSI feature."""
-        QMetaObject.invokeMethod(
-            main_window,
-            "toggle_weapon_detection_action_slot",
-            Qt.ConnectionType.QueuedConnection)
+        QTimer.singleShot(0, main_window.toggle_weapon_detection_action_slot)
 
     def exit_action():
         """Exit application."""
         logger.debug("Closing application via hotkey")
-        QMetaObject.invokeMethod(app, 'quit', Qt.ConnectionType.QueuedConnection)
+        QTimer.singleShot(0, app.quit)
         tts_service.speak("Closing script")
 
     def weapon_select_action(weapon_name: str):
         """Select weapon via hotkey with conditional TTS announcement."""
-        QMetaObject.invokeMethod(
-            main_window,
-            "weapon_select_action_slot",
-            Qt.ConnectionType.QueuedConnection,
-            Q_ARG(str, weapon_name))
+        QTimer.singleShot(0, lambda: main_window.weapon_select_action_slot(weapon_name))
 
     try:
         hotkey_service.register_action_callback(HotkeyAction.TOGGLE_RECOIL,
