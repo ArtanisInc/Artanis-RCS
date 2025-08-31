@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" /></a>
   <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows-lightgrey.svg" /></a>
-  <a href="#license--disclaimer"><img src="https://img.shields.io/badge/license-Educational%20Use-orange.svg" /></a>
+  <a href="https://github.com/ArtanisInc/Artanis-RCS/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" /></a>
 </p>
 
 > [!CAUTION]
@@ -37,7 +37,6 @@
 🎯 **Auto-Accept System**
 * Automatic match acceptance via console monitoring and screen detection
 
----
 
 ## 🛠️ **Technical Architecture**
 
@@ -87,7 +86,6 @@ artanis-rcs/
     └── __init__.py                  # Data package initialization
 ```
 
----
 
 ## 🔧 **Installation & Setup**
 
@@ -133,7 +131,6 @@ artanis-rcs/
 
    Or double-click `start.bat` for automated dependency management and startup.
 
----
 
 ## 📋 **Supported Weapons**
 
@@ -216,7 +213,6 @@ Each weapon includes customizable compensation parameters:
 }
 ```
 
----
 
 ## 🚨 **Troubleshooting**
 
@@ -260,7 +256,6 @@ Each weapon includes customizable compensation parameters:
 - **Logs**: `recoil_system.log` - Main application events and errors
 - **Debug Mode**: Enable verbose logging by setting `level=logging.DEBUG` in `main.py`
 
----
 
 ## 🤝 **Contributing**
 
@@ -271,9 +266,8 @@ Each weapon includes customizable compensation parameters:
 4. Update documentation as needed
 5. Submit pull request with detailed description
 
----
 
-## 🆘 **Support & Resources**
+## 🆘 **Support**
 
 ### **Issue Reporting**
 When reporting issues, please include:
@@ -282,14 +276,11 @@ When reporting issues, please include:
 - Complete error logs
 - Steps to reproduce the problem
 
----
 
 ## 📄 **License & Attribution**
 
 ### **License**
-This project is released under the MIT License with the following additional terms:
-
-**EDUCATIONAL USE ONLY**: This software is intended solely for educational and research purposes. Any use in violation of game Terms of Service is strictly prohibited and not endorsed by the developers.
+This project is released under the [MIT License](https://github.com/ArtanisInc/Artanis-RCS/blob/main/LICENSE) with the following additional terms:
 
 ### **Pattern and Algorithms Data Sources**
 - Recoil patterns derived from CS2 chinese community.
