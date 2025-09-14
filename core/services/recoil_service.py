@@ -136,8 +136,9 @@ class RecoilService:
 
             # Announce only if not in automatic weapon detection mode
             if self.tts_service and self._should_announce_weapon():
+                weapon_internal_name = self.current_weapon if self.current_weapon is not None else ""
                 weapon_display = self.config_service.get_weapon_display_name(
-                    self.current_weapon)
+                    weapon_internal_name)
                 clean_name = weapon_display.replace(
                     "-",
                     " ").replace(
