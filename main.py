@@ -168,9 +168,9 @@ def setup_gsi_integration(gsi_service: GSIService,
             logger.error("Failed to start GSI server")
             return False
 
-        if not weapon_detection_service.enable():
-            logger.error("Failed to enable weapon detection")
-            return False
+        # if not weapon_detection_service.enable():
+        #     logger.error("Failed to enable weapon detection")
+        #     return False
 
         logger.info("GSI integration ready: server started, weapon detection enabled")
         return True
@@ -220,6 +220,10 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
 
     def toggle_recoil_action():
         """Toggle recoil compensation."""
+        if recoil_service.active:
+            recoil_service.stop_compensation()
+        else:
+            recoil_service.start_compensation()
         QTimer.singleShot(0, main_window.toggle_recoil_action_slot)
 
     def toggle_weapon_detection_action():
@@ -232,11 +236,12 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
     def exit_action():
         """Exit application."""
         logger.debug("Closing application via hotkey")
-        QTimer.singleShot(0, app.quit)
         tts_service.speak("Closing script")
+        os._exit(0)
 
     def weapon_select_action(weapon_name: str):
         """Select weapon via hotkey with conditional TTS announcement."""
+        recoil_service.set_weapon(weapon_name)
         QTimer.singleShot(0, lambda: main_window.weapon_select_action_slot(weapon_name))
 
     try:

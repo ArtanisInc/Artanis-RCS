@@ -292,6 +292,22 @@ class MainWindow(QMainWindow):
 
             self.logger.debug(f"Weapon changed from user: {weapon_name}")
 
+            # Announce weapon change if not in auto-detection mode
+            should_announce = True
+            if (self.weapon_detection_service and
+                    self.weapon_detection_service.enabled):
+                should_announce = False
+
+            if should_announce and weapon_name:
+                weapon_display = (self.config_service
+                                    .get_weapon_display_name(weapon_name))
+                if weapon_display is not None:
+                    clean_name = weapon_display.replace(
+                        "-", " ").replace("_", " ")
+                    tts_service = getattr(self.recoil_service, 'tts_service', None)
+                    if tts_service is not None:
+                        tts_service.speak(clean_name)
+
         except Exception as e:
             self.logger.error(f"Weapon change handling error: {e}")
 
@@ -613,23 +629,20 @@ class MainWindow(QMainWindow):
                 current_weapon = self.recoil_service.current_weapon
 
                 if not current_weapon:
-                    current_weapon = self.config_tab.get_selected_weapon()
-
-                if not current_weapon:
                     self.logger.warning("No weapon available")
                     tts_service = getattr(self.recoil_service, 'tts_service', None)
                     if tts_service is not None:
                         tts_service.speak("No weapon available")
                     return
 
-                if self.recoil_service.current_weapon != current_weapon:
-                    self.recoil_service.set_weapon(current_weapon)
-
                 success = self.recoil_service.start_compensation(
                     allow_manual_when_auto_enabled=False)
 
                 if not success:
                     self.logger.error("Failed to start compensation")
+                    tts_service = getattr(self.recoil_service, 'tts_service', None)
+                    if tts_service is not None:
+                        tts_service.speak("Cannot start. Check logs.")
 
             action_text = "started" if self.recoil_service.active else "stopped"
             self.logger.debug("Compensation %s via hotkey", action_text)
@@ -643,35 +656,31 @@ class MainWindow(QMainWindow):
     def weapon_select_action_slot(self, weapon_name: str):
         """Slot to select weapon via hotkey with conditional TTS announcement."""
         try:
-            weapon_combo = (self.config_tab.global_weapon_section
-                            .weapon_combo)
-            index = weapon_combo.findData(weapon_name)
+            self.recoil_service.set_weapon(weapon_name)
+            self._sync_weapon_ui(weapon_name)
 
-            if index >= 0:
-                weapon_combo.setCurrentIndex(index)
-                self.recoil_service.set_weapon(weapon_name)
+            # Only announce if automatic weapon detection is not active
+            should_announce = True
+            if (self.weapon_detection_service and
+                    self.weapon_detection_service.enabled):
+                should_announce = False
+                self.logger.debug(
+                    "Weapon selection TTS suppressed: auto detection active")
+                tts_service = getattr(self.recoil_service, 'tts_service', None)
+                if tts_service is not None:
+                    tts_service.speak("Manual weapon selection disabled")
 
-                # Only announce if automatic weapon detection is not active
-                should_announce = True
-                if (self.weapon_detection_service and
-                        self.weapon_detection_service.enabled):
-                    should_announce = False
-                    self.logger.debug(
-                        "Weapon selection TTS suppressed: auto detection active")
+            if should_announce:
+                weapon_display = (self.config_service
+                                    .get_weapon_display_name(weapon_name))
+                if weapon_display is not None:
+                    clean_name = weapon_display.replace(
+                        "-", " ").replace("_", " ")
+                    tts_service = getattr(self.recoil_service, 'tts_service', None)
+                    if tts_service is not None:
+                        tts_service.speak(clean_name)
 
-                if should_announce:
-                    weapon_display = (self.config_service
-                                      .get_weapon_display_name(weapon_name))
-                    if weapon_display is not None:
-                        clean_name = weapon_display.replace(
-                            "-", " ").replace("_", " ")
-                        tts_service = getattr(self.recoil_service, 'tts_service', None)
-                        if tts_service is not None:
-                            tts_service.speak(clean_name)
-
-                self.logger.debug("Weapon selected via hotkey: %s", weapon_name)
-            else:
-                self.logger.warning("Weapon not found in UI: %s", weapon_name)
+            self.logger.debug("Weapon selected via hotkey: %s", weapon_name)
 
         except Exception as e:
             self.logger.error("Weapon selection error: %s", e)

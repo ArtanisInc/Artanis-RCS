@@ -75,7 +75,7 @@ class RecoilService:
 
         weapon_changed = self.current_weapon != weapon_name
         self.current_weapon = weapon_name
-        # Only log weapon changes to reduce repetitive logs
+
         if weapon_changed:
             self.logger.info("Current weapon: %s", weapon_name)
         else:
@@ -106,11 +106,12 @@ class RecoilService:
             self.logger.warning("Compensation already active")
             return False
 
-        if not self.current_weapon:
+        if not self.current_weapon and not self._is_manual_activation_blocked():
             self.logger.warning("No weapon selected")
+            if self.tts_service:
+                self.tts_service.speak("No weapon selected")
             return False
 
-        # Empêcher l'activation manuelle si la détection automatique est active
         if not allow_manual_when_auto_enabled and self._is_manual_activation_blocked():
             self.logger.info("Manual compensation start blocked: automatic weapon detection active")
             return False
@@ -127,7 +128,7 @@ class RecoilService:
                 daemon=True
             )
             self.running_thread.start()
-            # Only log compensation start if manual activation or different weapon
+
             if not self.weapon_detection_service or not self.weapon_detection_service.enabled:
                 self.logger.info("Compensation started")
             else:
@@ -163,7 +164,7 @@ class RecoilService:
                 self.running_thread.join(timeout=1.0)
 
             self.active = False
-            # Only log compensation stop if manual activation or errors occur
+
             if not self.weapon_detection_service or not self.weapon_detection_service.enabled:
                 self.logger.info("Compensation stopped")
             else:
@@ -255,7 +256,7 @@ class RecoilService:
                     self.logger.error("Empty pattern for weapon")
                     break
 
-                # Log weapon changes
+
                 if self._last_weapon_for_compensation != weapon.name:
                     self.logger.debug(
                         "Weapon change during compensation: %s -> %s",
