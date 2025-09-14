@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         self.weapon_detection_service = weapon_detection_service
         self.logger.debug("GSI services integrated for status monitoring")
 
-        self._update_gsi_status()
+        self.update_weapon_detection_status()
 
         self._sync_initial_ui_state()
 
@@ -272,7 +272,7 @@ class MainWindow(QMainWindow):
         self.config_tab.settings_saved.connect(self._on_settings_saved)
         self.config_tab.hotkeys_updated.connect(self._on_hotkeys_updated)
         self.tabs.currentChanged.connect(self._on_tab_changed)
-        self.gsi_status_update_signal.connect(self._update_gsi_status)
+        self.gsi_status_update_signal.connect(self.update_weapon_detection_status)
 
     def _on_weapon_changed(self, weapon_name: str):
         """Handle weapon selection change event from config tab."""
@@ -470,7 +470,7 @@ class MainWindow(QMainWindow):
 
         self.gsi_status_update_signal.emit()
 
-    def _update_gsi_status(self):
+    def update_weapon_detection_status(self):
         """Update GSI subsystem status with granular information."""
         try:
             # GSI Connection Status Assessment
@@ -637,31 +637,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             self.logger.error("Toggle compensation error: %s", e)
 
-    @Slot()
-    def toggle_weapon_detection_action_slot(self):
-        """Slot to toggle weapon detection GSI feature."""
-        try:
-            if self.weapon_detection_service:
-                if self.weapon_detection_service.enabled:
-                    success = self.weapon_detection_service.disable()
-                    status_text = "disabled" if success else "disable failed"
-                else:
-                    success = self.weapon_detection_service.enable()
-                    status_text = "enabled" if success else "enable failed"
-
-                self.logger.debug("Weapon detection %s via hotkey", status_text)
-
-                if success:
-                    tts_service = getattr(self.recoil_service, 'tts_service', None)
-                    if tts_service is not None:
-                        tts_service.speak(f"Weapon detection {status_text}")
-                else:
-                    self.logger.error("Failed to toggle weapon detection")
-            else:
-                self.logger.warning("Weapon detection service not available")
-
-        except Exception as e:
-            self.logger.error("Toggle weapon detection error: %s", e)
+    
 
     @Slot(str)
     def weapon_select_action_slot(self, weapon_name: str):

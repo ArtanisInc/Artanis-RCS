@@ -119,6 +119,13 @@ class WeaponDetectionService:
             self.logger.error("Failed to disable weapon detection: %s", e)
             return False
 
+    def toggle_detection(self) -> bool:
+        """Toggle weapon detection state."""
+        if self.enabled:
+            return self.disable()
+        else:
+            return self.enable()
+
     def process_player_state(self, player_state: PlayerState) -> None:
         """Process player state and update RCS accordingly."""
         if not self.enabled:

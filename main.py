@@ -224,7 +224,10 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
 
     def toggle_weapon_detection_action():
         """Toggle weapon detection GSI feature."""
-        QTimer.singleShot(0, main_window.toggle_weapon_detection_action_slot)
+        if weapon_detection_service and weapon_detection_service.toggle_detection():
+            new_status = "enabled" if weapon_detection_service.enabled else "disabled"
+            tts_service.speak(f"Weapon detection {new_status}")
+            QTimer.singleShot(0, main_window.update_weapon_detection_status)
 
     def exit_action():
         """Exit application."""
