@@ -198,10 +198,6 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
             self.send_response(500)
             self.end_headers()
 
-    def log_message(self, format, *args):
-        """Disable default HTTP logging."""
-        pass
-
 
 class GSIService:
     """Game State Integration service for CS2."""

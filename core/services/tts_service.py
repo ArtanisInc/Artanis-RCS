@@ -45,7 +45,7 @@ class TTSService:
 
             self._select_preferred_voice()
 
-            self.voice.Speak("", 3)  # Test with purge + async flag
+            self.clear_queue()
             self.logger.debug("SAPI initialized successfully")
             return True
 
@@ -212,7 +212,7 @@ class TTSService:
             # Stop any ongoing speech
             if self.voice:
                 try:
-                    self.voice.Speak("", 3)  # Purge any current speech (async)
+                    self.clear_queue()
                 except Exception as stop_error:
                     self.logger.warning("Error stopping SAPI: %s", stop_error)
                 finally:

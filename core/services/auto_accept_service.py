@@ -171,7 +171,7 @@ class AutoAcceptService(QObject):
                 self.tts_service.speak("Match found")
 
             # Store current mouse position
-            current_pos = win32gui.GetCursorPos()
+            current_pos = self._get_cursor_position()
 
             # Get CS2 window info
             window_info = self.screen_capture.get_window_info()
