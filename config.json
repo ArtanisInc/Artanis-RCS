@@ -3,12 +3,20 @@
     "features": {
         "tts_enabled": true,
         "bomb_timer_enabled": false,
-        "auto_accept_enabled": false
+        "auto_accept_enabled": false,
+        "follow_rcs_enabled": false
+    },
+    "follow_rcs": {
+        "dot_size": 3,
+        "color": [
+            0,
+            0,
+            255,
+            255
+        ]
     },
     "gsi": {
         "enabled": true,
-        "auto_weapon_switch": true,
-        "auto_rcs_control": true,
         "low_ammo_threshold": 5,
         "server_host": "127.0.0.1",
         "server_port": 59873
@@ -24,8 +32,10 @@
             "display_name": "AK-47",
             "length": 30,
             "multiple": 6,
-            "sleep_divider": 6,
-            "sleep_suber": -0.1
+            "sleep_divider": 6.0,
+            "sleep_suber": -0.1,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "m4a4",
@@ -33,7 +43,9 @@
             "length": 30,
             "multiple": 4,
             "sleep_divider": 4,
-            "sleep_suber": -0.5
+            "sleep_suber": -0.5,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "m4a1",
@@ -41,7 +53,9 @@
             "length": 20,
             "multiple": 4,
             "sleep_divider": 4.0,
-            "sleep_suber": -0.6
+            "sleep_suber": -0.6,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "galil",
@@ -49,7 +63,9 @@
             "length": 35,
             "multiple": 4,
             "sleep_divider": 4,
-            "sleep_suber": -0.8
+            "sleep_suber": -0.8,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "famas",
@@ -57,7 +73,9 @@
             "length": 25,
             "multiple": 4,
             "sleep_divider": 4,
-            "sleep_suber": -0.4
+            "sleep_suber": -0.4,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "sg553",
@@ -65,7 +83,9 @@
             "length": 30,
             "multiple": 4,
             "sleep_divider": 4,
-            "sleep_suber": -0.9
+            "sleep_suber": -0.9,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "aug",
@@ -73,7 +93,9 @@
             "length": 30,
             "multiple": 4,
             "sleep_divider": 4,
-            "sleep_suber": -0.9
+            "sleep_suber": -0.9,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "p90",
@@ -81,15 +103,19 @@
             "length": 50,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": -0.7
+            "sleep_suber": -0.7,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "bizon",
-            "display_name": "PP-Bizon",
+            "display_name": "PP-BIZON",
             "length": 64,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": 0.9
+            "sleep_suber": 0.9,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "ump45",
@@ -97,7 +123,9 @@
             "length": 25,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": -0.4
+            "sleep_suber": -0.4,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "mac10",
@@ -105,7 +133,9 @@
             "length": 30,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": -2.2
+            "sleep_suber": -2.2,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "mp5sd",
@@ -113,15 +143,19 @@
             "length": 30,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": 0
+            "sleep_suber": 0,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "mp7",
             "display_name": "MP7",
             "length": 30,
             "multiple": 3,
-            "sleep_divider": 3,
-            "sleep_suber": 0.1
+            "sleep_divider": 3.0,
+            "sleep_suber": 0.1,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "mp9",
@@ -129,7 +163,9 @@
             "length": 30,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": -0.3
+            "sleep_suber": -0.3,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "m249",
@@ -137,15 +173,29 @@
             "length": 100,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": -1
+            "sleep_suber": -1,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
+        },
+        {
+            "name": "negev",
+            "display_name": "NEGEV",
+            "length": 150,
+            "multiple": 3,
+            "sleep_divider": 3.0,
+            "sleep_suber": -1.5,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         },
         {
             "name": "cz75",
-            "display_name": "CZ75-Auto",
+            "display_name": "CZ75-AUTO",
             "length": 12,
             "multiple": 3,
             "sleep_divider": 3,
-            "sleep_suber": -3
+            "sleep_suber": -3,
+            "jitter_timing": 0.0,
+            "jitter_movement": 0.0
         }
     ]
 }

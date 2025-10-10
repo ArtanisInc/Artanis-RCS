@@ -168,10 +168,6 @@ def setup_gsi_integration(gsi_service: GSIService,
             logger.error("Failed to start GSI server")
             return False
 
-        # if not weapon_detection_service.enable():
-        #     logger.error("Failed to enable weapon detection")
-        #     return False
-
         logger.info("GSI integration ready: server started, weapon detection enabled")
         return True
 
@@ -184,6 +180,7 @@ def create_gui(app: QApplication, config_service, recoil_service, hotkey_service
                gsi_service=None, weapon_detection_service=None, bomb_timer_service=None, auto_accept_service=None):
     """Create main GUI window."""
     from ui.views.main_window import MainWindow
+    from ui.widgets.follow_rcs_overlay import FollowRCSOverlay
 
     logger = logging.getLogger("GUI")
     logger.debug("Creating GUI...")
@@ -202,10 +199,33 @@ def create_gui(app: QApplication, config_service, recoil_service, hotkey_service
         if auto_accept_service:
             window.set_auto_accept_service(auto_accept_service)
 
+        # Create and setup follow RCS overlay
+        game_sensitivity = config_service.config.get("game_sensitivity", 1.0)
+        follow_rcs_config = config_service.config.get("follow_rcs", {})
+        dot_size = follow_rcs_config.get("dot_size", 3)
+        dot_color_list = follow_rcs_config.get("color", [0, 0, 255, 255])
+        from PySide6.QtGui import QColor
+        dot_color = QColor(*dot_color_list)
+
+        follow_rcs_overlay = FollowRCSOverlay(
+            sensitivity=game_sensitivity,
+            dot_size=dot_size,
+            dot_color=dot_color
+        )
+
+        recoil_service.set_follow_rcs_overlay(follow_rcs_overlay)
+        window.set_follow_rcs_overlay(follow_rcs_overlay)
+
+        # Check if overlay should be enabled from config
+        features = config_service.config.get("features", {})
+        if features.get("follow_rcs_enabled", False):
+            follow_rcs_overlay.set_active(True)
+            logger.info("Follow RCS overlay enabled")
+
         setup_hotkey_callbacks(app, window, recoil_service, hotkey_service,
                                tts_service, weapon_detection_service)
 
-        logger.info("GUI initialized: Main window, Config tab, Visualization tab")
+        logger.info("GUI initialized: Main window, Config tab, Visualization tab, Follow RCS Overlay")
         return window
 
     except Exception as e:
@@ -236,7 +256,6 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
     def exit_action():
         """Exit application."""
         logger.debug("Closing application via hotkey")
-        tts_service.speak("Closing script")
         os._exit(0)
 
     def weapon_select_action(weapon_name: str):

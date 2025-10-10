@@ -115,6 +115,7 @@ class WeaponState:
             "weapon_ump45": "ump45",
             "weapon_bizon": "bizon",
             "weapon_m249": "m249",
+            "weapon_negev": "negev",
             "weapon_cz75a": "cz75"
         }
 
@@ -151,7 +152,10 @@ class PlayerState:
     @property
     def is_playing(self) -> bool:
         """Check if player is in active gameplay."""
-        return self.activity.lower() == "playing"
+        # player activity state doesn't work anymore...
+        # return self.activity.lower() == "playing"
+        activity_lower = self.activity.lower()
+        return activity_lower in ["playing", "unknown"]
 
     @property
     def is_combat_ready(self) -> bool:

@@ -38,14 +38,8 @@ class PatternSubdivisionAlgorithm:
         pattern_to_process = pattern[:length]
         result = []
 
-        # Accumulation tracking (critical for precision)
-        sum_x = 0.0
-        sum_y = 0.0
-        sum_x_original = 0.0
-        sum_y_original = 0.0
-
         # Process each original point
-        for i, point in enumerate(pattern_to_process):
+        for point in pattern_to_process:
             # Calculate precise subdivision values
             base_dx = point.dx / multiple
             base_dy = point.dy / multiple
@@ -73,14 +67,6 @@ class PatternSubdivisionAlgorithm:
                     delay=point.delay
                 ))
 
-                # Update subdivided sum
-                sum_x += sub_dx
-                sum_y += sub_dy
-
-            # Update original sum
-            sum_x_original += point.dx
-            sum_y_original += point.dy
-
         return result
 
 
@@ -96,7 +82,9 @@ class WeaponProfile:
             sleep_divider: float = 6.0,
             sleep_suber: float = 0.0,
             game_sensitivity: float = 1.0,
-            display_name: Optional[str] = None):
+            display_name: Optional[str] = None,
+            jitter_timing: float = 0.0,
+            jitter_movement: float = 0.0):
         """
         Initialize weapon profile.
 
@@ -109,6 +97,8 @@ class WeaponProfile:
             sleep_suber: Timing adjustment
             game_sensitivity: Game sensitivity setting
             display_name: Display name for UI
+            jitter_timing: Random timing variation (+/- milliseconds)
+            jitter_movement: Random movement variation (+/- percentage, 0-100)
         """
         self.name = name
         self.display_name = display_name or name
@@ -117,6 +107,8 @@ class WeaponProfile:
         self.sleep_divider = sleep_divider
         self.sleep_suber = sleep_suber
         self.game_sensitivity = game_sensitivity
+        self.jitter_timing = jitter_timing
+        self.jitter_movement = jitter_movement
         self.recoil_pattern = recoil_pattern
         self.calculated_pattern: List[RecoilData] = []
 
@@ -218,6 +210,8 @@ class WeaponProfile:
             "multiple": self.multiple,
             "sleep_divider": self.sleep_divider,
             "sleep_suber": self.sleep_suber,
+            "jitter_timing": self.jitter_timing,
+            "jitter_movement": self.jitter_movement,
         }
 
     @classmethod
@@ -232,7 +226,9 @@ class WeaponProfile:
             sleep_divider=data.get("sleep_divider", 6.0),
             sleep_suber=data.get("sleep_suber", 0.0),
             game_sensitivity=data.get("game_sensitivity", 1.0),
-            display_name=data.get("display_name", data["name"])
+            display_name=data.get("display_name", data["name"]),
+            jitter_timing=data.get("jitter_timing", 0.0),
+            jitter_movement=data.get("jitter_movement", 0.0)
         )
 
     def __repr__(self) -> str:

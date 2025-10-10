@@ -190,6 +190,8 @@ class ConfigService:
             if not self.config:
                 self.logger.warning("Empty or missing configuration file")
                 self._create_default_config()
+                self._parse_and_validate_config()
+                self.save_config()  # Save complete config with weapons and hotkeys
                 return False
 
             self._parse_and_validate_config()
@@ -229,6 +231,7 @@ class ConfigService:
 
         # Load weapon profiles
         weapons_config = self.config.get("weapons", [])
+
         self.weapon_profiles = self.weapon_manager.load_weapon_profiles(
             weapons_config, game_sensitivity)
 
@@ -250,7 +253,8 @@ class ConfigService:
         # Apply defaults for missing values
         defaults = {
             "tts_enabled": True,
-            "bomb_timer_enabled": True
+            "bomb_timer_enabled": False,
+            "follow_rcs_enabled": True
         }
 
         for key, default_value in defaults.items():
@@ -265,10 +269,43 @@ class ConfigService:
             "game_sensitivity": 1.0,
             "features": {
                 "tts_enabled": True,
-                "bomb_timer_enabled": True
+                "bomb_timer_enabled": False,
+                "auto_accept_enabled": False,
+                "follow_rcs_enabled": False
             },
-            "hotkeys": {},
-            "weapons": []
+            "follow_rcs": {
+                "dot_size": 3,
+                "color": [0, 0, 255, 255]
+            },
+            "gsi": {
+                "enabled": True,
+                "low_ammo_threshold": 5,
+                "server_host": "127.0.0.1",
+                "server_port": 59873
+            },
+            "hotkeys": {
+                "exit": "END",
+                "toggle_recoil": "INSERT",
+                "toggle_weapon_detection": "HOME"
+            },
+            "weapons": [
+                {"name": "ak47", "display_name": "AK-47", "length": 30, "multiple": 6, "sleep_divider": 6, "sleep_suber": -0.1, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "m4a4", "display_name": "M4A4", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.5, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "m4a1", "display_name": "M4A1-S", "length": 20, "multiple": 4, "sleep_divider": 4.0, "sleep_suber": -0.6, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "galil", "display_name": "Galil AR", "length": 35, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.8, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "famas", "display_name": "FAMAS", "length": 25, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.4, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "sg553", "display_name": "SG 553", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "aug", "display_name": "AUG", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "p90", "display_name": "P90", "length": 50, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.7, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "bizon", "display_name": "PP-BIZON", "length": 64, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0.9, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "ump45", "display_name": "UMP-45", "length": 25, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.4, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "mac10", "display_name": "MAC-10", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -2.2, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "mp5sd", "display_name": "MP5-SD", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "mp7", "display_name": "MP7", "length": 30, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": 0.1, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "mp9", "display_name": "MP9", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.3, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "m249", "display_name": "M249", "length": 100, "multiple": 3, "sleep_divider": 3, "sleep_suber": -1, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "cz75", "display_name": "CZ75-AUTO", "length": 12, "multiple": 3, "sleep_divider": 3, "sleep_suber": -3, "jitter_timing": 0.0, "jitter_movement": 0.0}
+            ]
         }
         self.logger.info("Created default configuration")
 

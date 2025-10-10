@@ -16,17 +16,20 @@
 ## 🎯 **Key Features**
 
 🔫 **Multi-Weapon Support**
-* 16 precise recoil patterns (CSV format)
+* 17 precise recoil patterns (CSV format)
 * Human-friendly recoil compensation
+* Jitter timing and movement customization per weapon
 
 🎮 **GSI (Game State Integration)**
-* Automatic weapon detection (CS2)
+* Automatic weapon detection
+* Automatic RCS activation based on game state
 * Instant pattern switching
 
 🖥️ **Advanced User Interface**
 * Modern, intuitive PySide6 GUI with qdarktheme
 * Recoil pattern visualization
 * Live system status and configuration management
+* Follow RCS overlay for visual recoil tracking
 
 🔊 **Audio Feedback**
 * Text-to-speech (TTS) for system events
@@ -75,12 +78,13 @@ artanis-rcs/
 │   └── widgets/                     # Custom UI components
 │       ├── pattern_visualizer.py    # Interactive recoil pattern display widget
 │       ├── bomb_timer_overlay.py    # Bomb countdown overlay widget with progress indicator
+│       ├── follow_rcs_overlay.py    # Visual recoil tracking overlay widget
 │       └── __init__.py              # Widgets package initialization
 ├── patterns/                        # Recoil pattern data (CSV format)
 │   ├── ak47.csv                     # AK-47 spray pattern data
 │   ├── m4a4.csv                     # M4A4 spray pattern data
 │   ├── m4a1.csv                     # M4A1-S spray pattern data
-│   └── [13 additional weapon patterns] # Complete weapon pattern library
+│   └── [14 additional weapon patterns] # Complete weapon pattern library
 └── data/                            # Data repositories and persistence
     ├── config_repository.py         # Configuration file management, pattern loading, and data persistence
     └── __init__.py                  # Data package initialization
@@ -134,7 +138,7 @@ artanis-rcs/
 
 ## 📋 **Supported Weapons**
 
-The system includes precise recoil patterns for 16 automatic weapons:
+The system includes precise recoil patterns for 17 automatic weapons:
 
 | Category          | Weapon        | CSV File       |
 |-------------------|--------------|----------------|
@@ -153,7 +157,8 @@ The system includes precise recoil patterns for 16 automatic weapons:
 |                   | MP7          | `mp7.csv`      |
 |                   | MP9          | `mp9.csv`      |
 | **Heavy**         | M249         | `m249.csv`     |
-| **Pistols**       | CZ75-Auto    | `cz75.csv`     |
+|                   | NEGEV        | `negev.csv`    |
+| **Pistols**       | CZ75-AUTO    | `cz75.csv`     |
 
 ---
 
@@ -169,9 +174,18 @@ The system includes precise recoil patterns for 16 automatic weapons:
 #### **Feature Toggles**
 ```json
 "features": {
-    "tts_enabled": true,                # Enable/disable audio feedback system
-    "bomb_timer_enabled": true,         # Enable/disable bomb timer overlay
-    "auto_accept_enabled": true         # Enable/disable automatic match acceptance
+    "tts_enabled": true,                # Toggle audio feedback system
+    "bomb_timer_enabled": false,         # Toggle bomb timer overlay
+    "auto_accept_enabled": false,        # Toggle automatic match acceptance
+    "follow_rcs_enabled": false         # Toggle visual recoil tracking overlay
+}
+```
+
+#### **Follow RCS Overlay Configuration**
+```json
+"follow_rcs": {
+    "dot_size": 3,                      # Size of the tracking dot in pixels
+    "color": [0, 0, 255, 255]           # RGBA color values (red, green, blue, alpha)
 }
 ```
 
@@ -179,8 +193,6 @@ The system includes precise recoil patterns for 16 automatic weapons:
 ```json
 "gsi": {
     "enabled": true,                    # Master GSI toggle
-    "auto_weapon_switch": true,         # Automatic weapon detection and switching
-    "auto_rcs_control": true,           # Automatic RCS activation based on game state
     "low_ammo_threshold": 5,            # Low ammunition warning threshold
     "server_host": "127.0.0.1",         # GSI server listening address
     "server_port": 59873               # GSI server port (must match CS2 config)
@@ -208,8 +220,10 @@ Each weapon includes customizable compensation parameters:
     "display_name": "AK-47",     # Human-readable weapon name
     "length": 30,                # Recoil pattern length (bullets)
     "multiple": 6,               # Compensation intensity multiplier
-    "sleep_divider": 6,          # Timing calculation divisor
-    "sleep_suber": -0.1          # Fine-tuning timing adjustment
+    "sleep_divider": 6.0,        # Timing calculation divisor
+    "sleep_suber": -0.1,         # Fine-tuning timing adjustment
+    "jitter_timing": 0.0,        # Random timing variation (+/- milliseconds)
+    "jitter_movement": 0.0       # Random movement variation (+/- percentage)
 }
 ```
 

@@ -95,10 +95,19 @@ class PatternCalculator:
         x_range = max(abs(x_max - x_min), PlotConfiguration.MIN_RANGE)
         y_range = max(abs(y_max - y_min), PlotConfiguration.MIN_RANGE)
 
-        x_min_padded = x_min - x_range * padding
-        x_max_padded = x_max + x_range * padding
-        y_min_padded = y_min - y_range * padding
-        y_max_padded = y_max + y_range * padding
+        max_range = max(x_range, y_range)
+        if x_range < max_range * 0.2:
+            x_range = max_range * 0.3
+        if y_range < max_range * 0.2:
+            y_range = max_range * 0.3
+
+        x_center = (x_min + x_max) / 2
+        y_center = (y_min + y_max) / 2
+
+        x_min_padded = x_center - x_range * (0.5 + padding)
+        x_max_padded = x_center + x_range * (0.5 + padding)
+        y_min_padded = y_center - y_range * (0.5 + padding)
+        y_max_padded = y_center + y_range * (0.5 + padding)
 
         return (x_min_padded, x_max_padded, y_min_padded, y_max_padded)
 

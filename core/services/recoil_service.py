@@ -2,6 +2,7 @@
 Recoil compensation service with TTS integration.
 """
 import logging
+import random
 import threading
 from typing import Dict, Optional, Callable, Any, List
 
@@ -36,9 +37,14 @@ class RecoilService:
         self._last_weapon_for_compensation = None
 
         self.weapon_detection_service = None
+        self.follow_rcs_overlay = None
 
         self.accumulated_x = 0.0
         self.accumulated_y = 0.0
+
+        # Raw recoil pattern position (for overlay visualization)
+        self.raw_recoil_x = 0.0
+        self.raw_recoil_y = 0.0
 
         self.status_changed_callbacks: List[Callable[[
             Dict[str, Any]], None]] = []
@@ -50,7 +56,12 @@ class RecoilService:
         self.weapon_detection_service = weapon_detection_service
         self.logger.debug("Weapon detection service reference established")
 
-    def set_weapon(self, weapon_name: str) -> bool:
+    def set_follow_rcs_overlay(self, follow_rcs_overlay):
+        """Set reference to follow RCS overlay for visual feedback."""
+        self.follow_rcs_overlay = follow_rcs_overlay
+        self.logger.debug("Follow RCS overlay reference established")
+
+    def set_weapon(self, weapon_name: Optional[str]) -> bool:
         """Set current weapon for compensation with conditional TTS notification."""
         if not weapon_name:
             weapon_changed = self.current_weapon is not None
@@ -242,8 +253,7 @@ class RecoilService:
 
     def _compensation_loop(self, key_trigger: int) -> None:
         """Main compensation loop."""
-        self.logger.debug(
-            "Starting compensation loop")
+        self.logger.debug("Starting compensation loop")
 
         while not self.stop_event.is_set():
             try:
@@ -257,35 +267,31 @@ class RecoilService:
                     self.logger.error("Empty pattern for weapon")
                     break
 
-
                 if self._last_weapon_for_compensation != weapon.name:
                     self.logger.debug(
                         "Weapon change during compensation: %s -> %s",
                         self._last_weapon_for_compensation, weapon.name)
-                    self.logger.debug("New pattern: %s points", len(pattern))
                     self._last_weapon_for_compensation = weapon.name
 
                 self.weapon_change_event.clear()
 
-                # Wait for trigger key press
                 if self.input_service.is_key_pressed(key_trigger):
                     self.logger.debug("Starting compensation sequence")
 
                     compensation_completed = self._execute_compensation_sequence(
                         weapon, pattern, key_trigger)
 
-                    # Handle weapon change interruption
                     if not compensation_completed and self.weapon_change_event.is_set():
-                        self.logger.debug(
-                            "Sequence interrupted by weapon change, restarting with new weapon")
                         continue
 
-                    # Wait for key release (if not interrupted)
                     if compensation_completed:
                         while (self.input_service.is_key_pressed(key_trigger) and
                                not self.stop_event.is_set() and
                                not self.weapon_change_event.is_set()):
                             self.timing_service.combined_sleep_2(1)
+
+                    if self.follow_rcs_overlay and self.follow_rcs_overlay.is_active:
+                        self.follow_rcs_overlay.update_position(0.0, 0.0)
 
             except Exception as e:
                 self.logger.error("Compensation loop error: %s", e, exc_info=True)
@@ -303,40 +309,52 @@ class RecoilService:
         begin_time = self.timing_service.system_time()
         accumulated_time = 0.0
 
-        # Reset accumulators
         self.accumulated_x = 0.0
         self.accumulated_y = 0.0
+        self.raw_recoil_x = 0.0
+        self.raw_recoil_y = 0.0
 
-        # Rounding error management
+        if self.follow_rcs_overlay and self.follow_rcs_overlay.is_active:
+            self.follow_rcs_overlay.update_position(0.0, 0.0)
+
         sum_x = 0.0
         sum_y = 0.0
 
         for i, point in enumerate(pattern):
-            # Check for weapon change during sequence
             if self.weapon_change_event.is_set():
-                self.logger.debug(
-                    "Weapon change detected during sequence at index %s", i)
+                self.logger.debug("Weapon change detected during sequence at index %s", i)
                 return False
 
-            # Check for interruption conditions
-            if not self.input_service.is_key_pressed(
-                    key_trigger) or self.stop_event.is_set():
+            if not self.input_service.is_key_pressed(key_trigger) or self.stop_event.is_set():
                 self.logger.debug("Sequence interrupted at index %s", i)
                 return False
 
-            # First point - initialization only
             if i == 0:
                 delay = point.delay / weapon.sleep_divider - weapon.sleep_suber
                 accumulated_time = delay
-                self.timing_service.combined_sleep(
-                    accumulated_time, begin_time)
+                self.timing_service.combined_sleep(accumulated_time, begin_time)
                 continue
 
-            # Apply mouse movement
-            dx_float = point.dx
-            dy_float = -point.dy
+            # Apply movement jitter if enabled (Gaussian distribution)
+            jitter_factor = 1.0
+            if weapon.jitter_movement > 0:
+                # Gaussian jitter: std_dev = jitter% / 3 (99.7% within +/- jitter%)
+                std_dev = (weapon.jitter_movement / 100.0) / 3.0
+                jitter_factor = 1.0 + random.gauss(0, std_dev)
 
-            # Rounding error management (accumulation for precision)
+            # Apply jitter to raw recoil tracking
+            jittered_dx = point.dx * jitter_factor
+            jittered_dy = point.dy * jitter_factor
+
+            self.raw_recoil_x += -jittered_dx
+            self.raw_recoil_y += jittered_dy
+
+            if self.follow_rcs_overlay and self.follow_rcs_overlay.is_active:
+                self.follow_rcs_overlay.update_position(self.raw_recoil_x, self.raw_recoil_y)
+
+            dx_float = jittered_dx
+            dy_float = -jittered_dy
+
             sum_x += dx_float
             sum_y += dy_float
 
@@ -346,26 +364,29 @@ class RecoilService:
             sum_x -= dx_int
             sum_y -= dy_int
 
-            # Effective mouse movement (if necessary)
             if dx_int != 0 or dy_int != 0:
                 self.input_service.mouse_move(dx_int, dy_int)
                 self.accumulated_x += dx_int
                 self.accumulated_y += dy_int
 
-            # Intermediate timing
             if i < len(pattern) - 1:
-                # Intermediate sleep based on index
                 if i <= weapon.multiple:
-                    intermediate_sleep = (
-                        point.delay / weapon.sleep_divider - weapon.sleep_suber) / 2
+                    intermediate_sleep = (point.delay / weapon.sleep_divider - weapon.sleep_suber) / 2
                 else:
-                    intermediate_sleep = (
-                        point.delay / weapon.sleep_divider - weapon.sleep_suber) * 2 / 3
+                    intermediate_sleep = (point.delay / weapon.sleep_divider - weapon.sleep_suber) * 2 / 3
 
                 self.timing_service.combined_sleep_2(intermediate_sleep)
-                accumulated_time += point.delay / weapon.sleep_divider - weapon.sleep_suber
-                self.timing_service.combined_sleep(
-                    accumulated_time, begin_time)
+
+                # Apply timing jitter if enabled (Gaussian distribution)
+                delay_time = point.delay / weapon.sleep_divider - weapon.sleep_suber
+                if weapon.jitter_timing > 0:
+                    # Gaussian jitter: std_dev = jitter_ms / 3 (99.7% within +/- jitter_ms)
+                    std_dev = weapon.jitter_timing / 3.0
+                    timing_jitter = random.gauss(0, std_dev)
+                    delay_time += timing_jitter / 1000.0  # Convert ms to seconds
+
+                accumulated_time += delay_time
+                self.timing_service.combined_sleep(accumulated_time, begin_time)
 
         self.logger.debug("Compensation sequence completed normally")
         return True

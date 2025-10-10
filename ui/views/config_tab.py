@@ -7,17 +7,16 @@ from typing import Tuple, List
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QComboBox, QSpinBox, QDoubleSpinBox, QPushButton,
-    QGroupBox, QCheckBox, QMessageBox
+    QGroupBox, QCheckBox, QMessageBox, QFrame, QSlider, QColorDialog
 )
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QFont, QColor
 
 from core.services.config_service import ConfigService
 
 
 class ConfigSection:
     """Base configuration section with common styling."""
-
 
     @staticmethod
     def create_styled_label(text: str, bold: bool = False) -> QLabel:
@@ -38,38 +37,135 @@ class ConfigSection:
         return button
 
 
-class GlobalWeaponSection(ConfigSection):
-    """Global settings and weapon selection section."""
+class ActiveWeaponSection(ConfigSection):
+    """Active weapon selection for recoil control."""
 
     def __init__(self):
-        self.section = QGroupBox("Global Configuration and Weapon Selection")
-        self.section.setMaximumHeight(140)
+        self.section = QGroupBox("Active Weapon Selection")
         self._setup_ui()
 
     def _setup_ui(self):
-        layout = QGridLayout(self.section)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(8)
+        layout = QHBoxLayout(self.section)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(12)
 
-        # Global sensitivity
-        sens_label = self.create_styled_label("Game Sensitivity:")
-        self.global_sensitivity = QDoubleSpinBox()
-        self._configure_sensitivity_spinner()
-
-        # Weapon selection
-        weapon_label = self.create_styled_label("Active Weapon:")
+        weapon_label = self.create_styled_label("Current Active Weapon:")
+        weapon_label.setMinimumWidth(140)
         self.weapon_combo = QComboBox()
         self._configure_weapon_combo()
 
-        self.save_global_button = self.create_styled_button("Save")
+        layout.addWidget(weapon_label)
+        layout.addWidget(self.weapon_combo)
+        layout.addStretch()
 
-        # Layout arrangement
-        layout.addWidget(sens_label, 0, 0)
-        layout.addWidget(self.global_sensitivity, 0, 1)
-        layout.addWidget(self.save_global_button, 0, 2)
-        layout.addWidget(weapon_label, 1, 0)
-        layout.addWidget(self.weapon_combo, 1, 1, 1, 2)
-        layout.setColumnStretch(3, 1)
+    def _configure_weapon_combo(self):
+        """Configure weapon combo box properties."""
+        self.weapon_combo.setMaximumHeight(28)
+        self.weapon_combo.setMinimumWidth(200)
+        self.weapon_combo.setFont(QFont("Arial", 10))
+
+
+class WeaponParametersSection(ConfigSection):
+    """Weapon parameters configuration section."""
+
+    def __init__(self):
+        self.section = QGroupBox("Weapon Parameters")
+        self._setup_ui()
+
+    def _setup_ui(self):
+        main_layout = QVBoxLayout(self.section)
+        main_layout.setContentsMargins(16, 12, 16, 12)
+        main_layout.setSpacing(12)
+
+        # Info text
+        info_label = QLabel("Select a weapon above to configure its parameters:")
+        info_label.setFont(QFont("Arial", 9))
+        info_label.setStyleSheet("color: #666;")
+        main_layout.addWidget(info_label)
+
+        # Settings in a grid for better alignment
+        settings_grid = QGridLayout()
+        settings_grid.setSpacing(10)
+        settings_grid.setColumnMinimumWidth(0, 140)
+        settings_grid.setColumnMinimumWidth(2, 140)
+
+        # Row 0 - Sensitivity and Multiplier
+        sens_label = self.create_styled_label("Game Sensitivity:")
+        self.global_sensitivity = QDoubleSpinBox()
+        self._configure_sensitivity_spinner()
+        settings_grid.addWidget(sens_label, 0, 0)
+        settings_grid.addWidget(self.global_sensitivity, 0, 1)
+
+        mult_label = self.create_styled_label("Multiplier:")
+        self.multiple_spin = QSpinBox()
+        self._configure_multiplier_spinner()
+        settings_grid.addWidget(mult_label, 0, 2)
+        settings_grid.addWidget(self.multiple_spin, 0, 3)
+
+        # Row 1 - Delay Divider and Delay Adjustment
+        div_label = self.create_styled_label("Delay Divider:")
+        self.sleep_divider_spin = QDoubleSpinBox()
+        self._configure_sleep_divider_spinner()
+        settings_grid.addWidget(div_label, 1, 0)
+        settings_grid.addWidget(self.sleep_divider_spin, 1, 1)
+
+        suber_label = self.create_styled_label("Delay Adjustment:")
+        self.sleep_suber_spin = QDoubleSpinBox()
+        self._configure_sleep_suber_spinner()
+        settings_grid.addWidget(suber_label, 1, 2)
+        settings_grid.addWidget(self.sleep_suber_spin, 1, 3)
+
+        # Row 2 - Jitter Timing and Jitter Movement
+        jitter_timing_label = self.create_styled_label("Jitter Timing:")
+        self.jitter_timing_spin = QDoubleSpinBox()
+        self._configure_jitter_timing_spinner()
+        settings_grid.addWidget(jitter_timing_label, 2, 0)
+        settings_grid.addWidget(self.jitter_timing_spin, 2, 1)
+
+        jitter_movement_label = self.create_styled_label("Jitter Movement:")
+        self.jitter_movement_spin = QDoubleSpinBox()
+        self._configure_jitter_movement_spinner()
+        settings_grid.addWidget(jitter_movement_label, 2, 2)
+        settings_grid.addWidget(self.jitter_movement_spin, 2, 3)
+
+        main_layout.addLayout(settings_grid)
+
+        # Save button
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        self.save_button = self.create_styled_button("Save Parameters", 140)
+        button_layout.addWidget(self.save_button)
+        button_layout.addStretch()
+        main_layout.addLayout(button_layout)
+
+    def _configure_multiplier_spinner(self):
+        """Configure multiplier spinner."""
+        self.multiple_spin.setRange(1, 20)
+        self.multiple_spin.setSuffix("x")
+        self.multiple_spin.setMinimumWidth(100)
+        self.multiple_spin.setMaximumWidth(120)
+        self.multiple_spin.setMaximumHeight(28)
+        self.multiple_spin.setFont(QFont("Arial", 10))
+
+    def _configure_sleep_divider_spinner(self):
+        """Configure sleep divider spinner."""
+        self.sleep_divider_spin.setRange(0.1, 20.0)
+        self.sleep_divider_spin.setSingleStep(0.1)
+        self.sleep_divider_spin.setSuffix(" div")
+        self.sleep_divider_spin.setMinimumWidth(100)
+        self.sleep_divider_spin.setMaximumWidth(120)
+        self.sleep_divider_spin.setMaximumHeight(28)
+        self.sleep_divider_spin.setFont(QFont("Arial", 10))
+
+    def _configure_sleep_suber_spinner(self):
+        """Configure sleep suber spinner."""
+        self.sleep_suber_spin.setRange(-5.0, 5.0)
+        self.sleep_suber_spin.setSingleStep(0.1)
+        self.sleep_suber_spin.setSuffix(" ms")
+        self.sleep_suber_spin.setMinimumWidth(100)
+        self.sleep_suber_spin.setMaximumWidth(120)
+        self.sleep_suber_spin.setMaximumHeight(28)
+        self.sleep_suber_spin.setFont(QFont("Arial", 10))
 
     def _configure_sensitivity_spinner(self):
         """Configure sensitivity spinner properties."""
@@ -77,118 +173,120 @@ class GlobalWeaponSection(ConfigSection):
         self.global_sensitivity.setSingleStep(0.1)
         self.global_sensitivity.setDecimals(2)
         self.global_sensitivity.setSuffix(" sens")
+        self.global_sensitivity.setMinimumWidth(100)
+        self.global_sensitivity.setMaximumWidth(120)
         self.global_sensitivity.setMaximumHeight(28)
-        self.global_sensitivity.setMaximumWidth(100)
         self.global_sensitivity.setFont(QFont("Arial", 10))
 
-    def _configure_weapon_combo(self):
-        """Configure weapon combo box properties."""
-        self.weapon_combo.setMaximumHeight(28)
-        self.weapon_combo.setFont(QFont("Arial", 10))
+    def _configure_jitter_timing_spinner(self):
+        """Configure jitter timing spinner."""
+        self.jitter_timing_spin.setRange(0.0, 10.0)
+        self.jitter_timing_spin.setSingleStep(0.1)
+        self.jitter_timing_spin.setDecimals(1)
+        self.jitter_timing_spin.setSuffix(" ms")
+        self.jitter_timing_spin.setMinimumWidth(100)
+        self.jitter_timing_spin.setMaximumWidth(120)
+        self.jitter_timing_spin.setMaximumHeight(28)
+        self.jitter_timing_spin.setFont(QFont("Arial", 10))
 
-
-class CompensationParamsSection(ConfigSection):
-    """Compensation parameters section."""
-
-    def __init__(self):
-        self.section = QGroupBox("Compensation Parameters")
-        self.section.setMaximumHeight(140)
-        self.param_controls = {}
-        self._setup_ui()
-
-    def _setup_ui(self):
-        layout = QGridLayout(self.section)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(8)
-
-        self._create_param_controls()
-
-        # Layout controls
-        controls_layout = [
-            ("Multiplier:", 'multiple', 0, 0),
-            ("Delay Divider:", 'sleep_divider', 0, 2),
-            ("Delay Adjustment:", 'sleep_suber', 1, 0)
-        ]
-
-        for label_text, key, row, col in controls_layout:
-            label = self.create_styled_label(label_text)
-            layout.addWidget(label, row, col)
-            layout.addWidget(self.param_controls[key], row, col + 1)
-
-        self.save_config_button = self.create_styled_button("Save")
-        layout.addWidget(self.save_config_button, 1, 2, 1, 2)
-
-    def _create_param_controls(self):
-        """Create and configure parameter controls."""
-        # Multiple control
-        self.param_controls['multiple'] = QSpinBox()
-        self.param_controls['multiple'].setRange(1, 20)
-        self.param_controls['multiple'].setSuffix("x")
-        self.param_controls['multiple'].setMaximumWidth(80)
-
-        self.param_controls['sleep_divider'] = QDoubleSpinBox()
-        self.param_controls['sleep_divider'].setRange(0.1, 20.0)
-        self.param_controls['sleep_divider'].setSingleStep(0.1)
-        self.param_controls['sleep_divider'].setSuffix(" div")
-        self.param_controls['sleep_divider'].setMaximumWidth(100)
-
-        self.param_controls['sleep_suber'] = QDoubleSpinBox()
-        self.param_controls['sleep_suber'].setRange(-5.0, 5.0)
-        self.param_controls['sleep_suber'].setSingleStep(0.1)
-        self.param_controls['sleep_suber'].setSuffix(" ms")
-        self.param_controls['sleep_suber'].setMaximumWidth(100)
-
-        for control in self.param_controls.values():
-            control.setMaximumHeight(28)
-            control.setFont(QFont("Arial", 10))
-
+    def _configure_jitter_movement_spinner(self):
+        """Configure jitter movement spinner."""
+        self.jitter_movement_spin.setRange(0.0, 100.0)
+        self.jitter_movement_spin.setSingleStep(1.0)
+        self.jitter_movement_spin.setDecimals(1)
+        self.jitter_movement_spin.setSuffix(" %")
+        self.jitter_movement_spin.setMinimumWidth(100)
+        self.jitter_movement_spin.setMaximumWidth(120)
+        self.jitter_movement_spin.setMaximumHeight(28)
+        self.jitter_movement_spin.setFont(QFont("Arial", 10))
 
 class FeaturesSection(ConfigSection):
     """Features configuration section."""
 
     def __init__(self):
-        self.section = QGroupBox("Features")
-        self.section.setMaximumHeight(100)  # Reduced height since we use 2 columns now
+        self.section = QGroupBox("Additional Features")
         self._setup_ui()
 
     def _setup_ui(self):
-        layout = QGridLayout(self.section)
-        layout.setContentsMargins(12, 8, 12, 8)
-        layout.setSpacing(6)
+        main_layout = QVBoxLayout(self.section)
+        main_layout.setContentsMargins(16, 12, 16, 12)
+        main_layout.setSpacing(12)
 
-        self.audio_feature = QCheckBox("Audio Notification")
+        # First row - General features
+        first_row = QHBoxLayout()
+        first_row.setSpacing(20)
+
+        self.audio_feature = QCheckBox("Audio Notifications")
         self.audio_feature.setChecked(True)
         self.audio_feature.setFont(QFont("Arial", 10))
 
-        # Bomb timer feature checkbox
-        self.bomb_timer_feature = QCheckBox("Bomb Timer Overlay")
+        self.bomb_timer_feature = QCheckBox("Bomb Timer")
         self.bomb_timer_feature.setChecked(True)
         self.bomb_timer_feature.setFont(QFont("Arial", 10))
 
-        # Auto Accept feature checkbox
         self.auto_accept_feature = QCheckBox("Auto Accept Matches")
         self.auto_accept_feature.setChecked(False)
         self.auto_accept_feature.setFont(QFont("Arial", 10))
 
-        # Layout arrangement in two columns to optimize space
-        # Column 1: Audio and Bomb Timer
-        layout.addWidget(self.audio_feature, 0, 0)
-        layout.addWidget(self.bomb_timer_feature, 1, 0)
+        first_row.addWidget(self.audio_feature)
+        first_row.addWidget(self.bomb_timer_feature)
+        first_row.addWidget(self.auto_accept_feature)
+        first_row.addStretch()
 
-        # Column 2: Auto Accept
-        layout.addWidget(self.auto_accept_feature, 0, 1)
+        # Second row - Follow RCS configuration
+        second_row = QHBoxLayout()
+        second_row.setSpacing(15)
 
-        layout.setColumnStretch(0, 1)
-        layout.setColumnStretch(1, 1)
+        self.follow_rcs_feature = QCheckBox("Follow RCS")
+        self.follow_rcs_feature.setChecked(False)
+        self.follow_rcs_feature.setFont(QFont("Arial", 10))
+
+        # Color picker button
+        color_label = QLabel("Color:")
+        color_label.setFont(QFont("Arial", 10))
+
+        self.color_button = QPushButton()
+        self.color_button.setMaximumWidth(60)
+        self.color_button.setMaximumHeight(28)
+        self.color_button.setStyleSheet("background-color: rgb(0, 0, 255);")
+        self.current_color = QColor(0, 0, 255, 255)
+
+        # Size slider
+        size_label = QLabel("Dot Size:")
+        size_label.setFont(QFont("Arial", 10))
+
+        self.size_slider = QSlider(Qt.Orientation.Horizontal)
+        self.size_slider.setMinimum(1)
+        self.size_slider.setMaximum(10)
+        self.size_slider.setValue(3)
+        self.size_slider.setMaximumWidth(120)
+        self.size_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.size_slider.setTickInterval(1)
+
+        self.size_value_label = QLabel("3")
+        self.size_value_label.setFont(QFont("Arial", 10))
+        self.size_value_label.setMinimumWidth(20)
+
+        second_row.addWidget(self.follow_rcs_feature)
+        second_row.addSpacing(10)
+        second_row.addWidget(color_label)
+        second_row.addWidget(self.color_button)
+        second_row.addSpacing(10)
+        second_row.addWidget(size_label)
+        second_row.addWidget(self.size_slider)
+        second_row.addWidget(self.size_value_label)
+        second_row.addStretch()
+
+        main_layout.addLayout(first_row)
+        main_layout.addLayout(second_row)
 
 
 
 class HotkeysSection(ConfigSection):
-    """Hotkeys configuration section with System and Weapon sub-groups."""
+    """Simplified hotkeys configuration section."""
 
     def __init__(self):
-        self.section = QGroupBox("Keyboard Shortcuts")  # Main group box as before
-        self.section.setMaximumHeight(320)
+        self.section = QGroupBox("Keyboard Shortcuts")
         self.hotkey_controls = {}
         self.key_options = self._get_key_options()
         self._setup_ui()
@@ -201,77 +299,88 @@ class HotkeysSection(ConfigSection):
 
     def _setup_ui(self):
         main_layout = QVBoxLayout(self.section)
-        main_layout.setContentsMargins(12, 10, 12, 10)
-        main_layout.setSpacing(8)
+        main_layout.setContentsMargins(16, 12, 16, 12)
+        main_layout.setSpacing(16)
 
-        # System hotkeys sub-group
-        self.system_group = QGroupBox("System")
-        self.system_group.setMaximumHeight(110)
-        main_layout.addWidget(self.system_group)
+        # System shortcuts section
+        self._create_system_hotkeys(main_layout)
 
-        # Weapon hotkeys sub-group
-        self.weapon_group = QGroupBox("Weapons")
-        self.weapon_group.setMaximumHeight(130)
-        main_layout.addWidget(self.weapon_group)
+        # Separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        main_layout.addWidget(separator)
 
-        self._setup_system_hotkeys()
-        self._setup_weapon_hotkeys()
+        # Weapon shortcuts section
+        self._create_weapon_hotkeys(main_layout)
 
+        # Save button
         save_layout = QHBoxLayout()
         save_layout.addStretch()
-        self.save_hotkeys_button = self.create_styled_button("Save")
-        self.save_hotkeys_button.setMinimumWidth(120)
+        self.save_hotkeys_button = self.create_styled_button("Save Hotkeys", 130)
         save_layout.addWidget(self.save_hotkeys_button)
         save_layout.addStretch()
-
         main_layout.addLayout(save_layout)
 
-    def _setup_system_hotkeys(self):
-        """Setup system hotkeys controls in their group box."""
-        layout = QGridLayout(self.system_group)
-        layout.setContentsMargins(12, 8, 12, 8)
-        layout.setSpacing(6)
+    def _create_system_hotkeys(self, main_layout):
+        """Create system hotkey controls."""
+        # Title
+        title_label = self.create_styled_label("System Shortcuts:", bold=True)
+        main_layout.addWidget(title_label)
 
-        system_hotkeys = ['toggle_recoil', 'toggle_weapon_detection', 'exit']
-        for hotkey in system_hotkeys:
+        # System hotkeys grid
+        system_grid = QGridLayout()
+        system_grid.setSpacing(8)
+
+        system_hotkeys = [
+            ("Toggle Manual RCS:", 'toggle_recoil'),
+            ("Toggle Auto Detection:", 'toggle_weapon_detection'),
+            ("Exit Application:", 'exit')
+        ]
+
+        for i, (label_text, key) in enumerate(system_hotkeys):
+            row = i // 2
+            col = (i % 2) * 2
+
+            label = QLabel(label_text)
+            label.setFont(QFont("Arial", 10))
+            label.setMinimumWidth(140)
+
             combo = QComboBox()
-            combo.setMaximumHeight(26)
+            combo.setMaximumHeight(28)
             combo.setMaximumWidth(100)
             combo.setFont(QFont("Arial", 10))
             for option in self.key_options:
                 combo.addItem(option)
-            self.hotkey_controls[hotkey] = combo
+            self.hotkey_controls[key] = combo
 
-        hotkey_items = [
-            ("Toggle RCS:", 'toggle_recoil', 0, 0),
-            ("Toggle Detection:", 'toggle_weapon_detection', 0, 2),
-            ("Exit Application:", 'exit', 1, 0)
-        ]
+            system_grid.addWidget(label, row, col)
+            system_grid.addWidget(combo, row, col + 1)
 
-        for label_text, key, row, col in hotkey_items:
-            label = QLabel(label_text)
-            label.setFont(QFont("Arial", 10))
-            layout.addWidget(label, row, col)
-            layout.addWidget(self.hotkey_controls[key], row, col + 1)
+        main_layout.addLayout(system_grid)
 
-    def _setup_weapon_hotkeys(self):
-        """Setup weapon hotkeys controls in their group box."""
-        layout = QGridLayout(self.weapon_group)
-        layout.setContentsMargins(12, 8, 12, 8)
-        layout.setSpacing(6)
+    def _create_weapon_hotkeys(self, main_layout):
+        """Create weapon hotkey controls."""
+        # Title
+        title_label = self.create_styled_label("Weapon Shortcuts:", bold=True)
+        main_layout.addWidget(title_label)
 
-        # Weapon selection
-        weapon_label = self.create_styled_label("Weapon:")
+        # Weapon selection row
+        weapon_layout = QHBoxLayout()
+        weapon_label = QLabel("Weapon:")
+        weapon_label.setFont(QFont("Arial", 10))
+        weapon_label.setMinimumWidth(80)
+
         self.weapon_hotkey_combo = QComboBox()
-        self.weapon_hotkey_combo.setObjectName("weapon_hotkey_combo")
-        self.weapon_hotkey_combo.setMaximumHeight(26)
+        self.weapon_hotkey_combo.setMaximumHeight(28)
         self.weapon_hotkey_combo.setFont(QFont("Arial", 10))
 
-        # Key selection
-        key_label = self.create_styled_label("Key:")
+        key_label = QLabel("Key:")
+        key_label.setFont(QFont("Arial", 10))
+        key_label.setMinimumWidth(40)
+
         self.key_hotkey_combo = QComboBox()
-        self.key_hotkey_combo.setObjectName("key_hotkey_combo")
-        self.key_hotkey_combo.setMaximumHeight(26)
+        self.key_hotkey_combo.setMaximumHeight(28)
         self.key_hotkey_combo.setMaximumWidth(100)
         self.key_hotkey_combo.setFont(QFont("Arial", 10))
 
@@ -279,75 +388,29 @@ class HotkeysSection(ConfigSection):
         for option in self.key_options:
             self.key_hotkey_combo.addItem(option)
 
-        # Action buttons
+        weapon_layout.addWidget(weapon_label)
+        weapon_layout.addWidget(self.weapon_hotkey_combo)
+        weapon_layout.addSpacing(20)
+        weapon_layout.addWidget(key_label)
+        weapon_layout.addWidget(self.key_hotkey_combo)
+        weapon_layout.addStretch()
+        main_layout.addLayout(weapon_layout)
+
+        # Action buttons row
+        buttons_layout = QHBoxLayout()
         self.assign_weapon_key_button = self._create_weapon_button("Assign")
         self.remove_weapon_key_button = self._create_weapon_button("Remove")
 
-        layout.addWidget(weapon_label, 0, 0)
-        layout.addWidget(self.weapon_hotkey_combo, 0, 1)
-        layout.addWidget(key_label, 0, 2)
-        layout.addWidget(self.key_hotkey_combo, 0, 3)
-
-        # Button layout
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addStretch()
         buttons_layout.addWidget(self.assign_weapon_key_button)
         buttons_layout.addWidget(self.remove_weapon_key_button)
         buttons_layout.addStretch()
-
-        buttons_widget = QWidget()
-        buttons_widget.setLayout(buttons_layout)
-        layout.addWidget(buttons_widget, 1, 0, 1, 4)
-
-    def _create_weapon_hotkeys_section(self, layout):
-        """Create weapon hotkeys controls."""
-        # Section title
-        weapon_title = QLabel("WEAPONS")
-        weapon_title.setObjectName("section_title_header")
-        weapon_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(weapon_title, 3, 0, 1, 4)
-
-        # Weapon selection
-        weapon_label = self.create_styled_label("Weapon:")
-        self.weapon_hotkey_combo = QComboBox()
-        self.weapon_hotkey_combo.setMaximumHeight(26)
-        self.weapon_hotkey_combo.setFont(QFont("Arial", 10))
-
-        # Key selection
-        key_label = self.create_styled_label("Key:")
-        self.key_hotkey_combo = QComboBox()
-        self.key_hotkey_combo.setMaximumHeight(26)
-        self.key_hotkey_combo.setMaximumWidth(100)
-        self.key_hotkey_combo.setFont(QFont("Arial", 10))
-
-        self.key_hotkey_combo.addItem("None", "")
-        for option in self.key_options:
-            self.key_hotkey_combo.addItem(option)
-
-        # Action buttons
-        self.assign_weapon_key_button = self._create_weapon_button("Assign")
-        self.remove_weapon_key_button = self._create_weapon_button("Remove")
-
-        layout.addWidget(weapon_label, 4, 0)
-        layout.addWidget(self.weapon_hotkey_combo, 4, 1)
-        layout.addWidget(key_label, 4, 2)
-        layout.addWidget(self.key_hotkey_combo, 4, 3)
-
-        # Button layout
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self.assign_weapon_key_button)
-        buttons_layout.addWidget(self.remove_weapon_key_button)
-        buttons_layout.addStretch()
-
-        buttons_widget = QWidget()
-        buttons_widget.setLayout(buttons_layout)
-        layout.addWidget(buttons_widget, 5, 0, 1, 4)
+        main_layout.addLayout(buttons_layout)
 
     def _create_weapon_button(self, text: str) -> QPushButton:
         """Create weapon action button."""
         button = QPushButton(text)
         button.setMaximumHeight(28)
-        button.setMaximumWidth(80 if text == "Assign" else 90)
+        button.setMaximumWidth(80)
         button.setFont(QFont("Arial", 9))
         return button
 
@@ -363,9 +426,10 @@ class ConfigTab(QWidget):
         super().__init__()
         self.logger = logging.getLogger("ConfigTab")
         self.config_service = config_service
+        self.follow_rcs_overlay = None
 
-        self.global_weapon_section = GlobalWeaponSection()
-        self.params_section = CompensationParamsSection()
+        self.active_weapon_section = ActiveWeaponSection()
+        self.weapon_parameters_section = WeaponParametersSection()
         self.features_section = FeaturesSection()
         self.hotkeys_section = HotkeysSection()
 
@@ -374,39 +438,54 @@ class ConfigTab(QWidget):
         self._load_data()
         self.logger.debug("Configuration tab initialized")
 
+    def set_follow_rcs_overlay(self, overlay):
+        """Set follow RCS overlay reference for sensitivity updates."""
+        self.follow_rcs_overlay = overlay
+
     def _setup_ui(self):
         """Setup main UI layout."""
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(8, 8, 8, 8)
-        main_layout.setSpacing(8)
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        main_layout.setSpacing(16)
 
-        main_layout.addWidget(self.global_weapon_section.section)
-        main_layout.addWidget(self.params_section.section)
+        # Add sections with consistent spacing
+        main_layout.addWidget(self.active_weapon_section.section)
+        main_layout.addWidget(self.weapon_parameters_section.section)
         main_layout.addWidget(self.features_section.section)
         main_layout.addWidget(self.hotkeys_section.section)
 
+        # Add stretch to push everything to the top
+        main_layout.addStretch()
+
     def _setup_connections(self):
         """Setup signal connections."""
-        # Main controls
-        self.global_weapon_section.weapon_combo.currentIndexChanged.connect(
+        # Active weapon selection
+        self.active_weapon_section.weapon_combo.currentIndexChanged.connect(
             self._on_weapon_changed)
 
-        self.global_weapon_section.save_global_button.clicked.connect(
-            self._save_global_config)
-        self.params_section.save_config_button.clicked.connect(
+        # Weapon parameters configuration
+        self.weapon_parameters_section.save_button.clicked.connect(
             self._save_weapon_config)
-        self.hotkeys_section.save_hotkeys_button.clicked.connect(
-            self._save_hotkeys_config)
 
-        # Features auto-save (no save button)
+        # Features auto-save
         self.features_section.audio_feature.toggled.connect(
             self._save_features_config)
         self.features_section.bomb_timer_feature.toggled.connect(
             self._save_features_config)
         self.features_section.auto_accept_feature.toggled.connect(
             self._save_features_config)
+        self.features_section.follow_rcs_feature.toggled.connect(
+            self._save_features_config)
 
-        # Weapon hotkeys
+        # Follow RCS configuration
+        self.features_section.color_button.clicked.connect(
+            self._on_color_button_clicked)
+        self.features_section.size_slider.valueChanged.connect(
+            self._on_size_slider_changed)
+
+        # Hotkeys
+        self.hotkeys_section.save_hotkeys_button.clicked.connect(
+            self._save_hotkeys_config)
         self.hotkeys_section.weapon_hotkey_combo.currentIndexChanged.connect(
             self._on_weapon_hotkey_changed)
         self.hotkeys_section.assign_weapon_key_button.clicked.connect(
@@ -428,36 +507,34 @@ class ConfigTab(QWidget):
     def _load_global_settings(self):
         """Load global settings."""
         sensitivity = self.config_service.config.get("game_sensitivity", 1.0)
-        self.global_weapon_section.global_sensitivity.setValue(sensitivity)
+        self.weapon_parameters_section.global_sensitivity.setValue(sensitivity)
 
     def _load_weapons(self):
         """Load weapons into combo boxes."""
-        current_weapon = self.global_weapon_section.weapon_combo.currentData()
+        current_weapon = self.active_weapon_section.weapon_combo.currentData()
 
-
-        self.global_weapon_section.weapon_combo.clear()
+        self.active_weapon_section.weapon_combo.clear()
         self.hotkeys_section.weapon_hotkey_combo.clear()
 
-        self.global_weapon_section.weapon_combo.addItem("Select a weapon...", userData="")
+        self.active_weapon_section.weapon_combo.addItem("Select a weapon...", userData="")
         self.hotkeys_section.weapon_hotkey_combo.addItem("Select a weapon...", userData="")
 
         for name in self.config_service.weapon_profiles.keys():
             display_name = self.config_service.get_weapon_display_name(name)
             display_name_str = str(display_name) if display_name is not None else ""
             name_str = str(name) if name is not None else ""
-            self.global_weapon_section.weapon_combo.addItem(display_name_str, userData=name_str)
+            self.active_weapon_section.weapon_combo.addItem(display_name_str, userData=name_str)
             self.hotkeys_section.weapon_hotkey_combo.addItem(display_name_str, userData=name_str)
 
         # Restore selection
         if current_weapon:
-            index = self.global_weapon_section.weapon_combo.findData(
-                current_weapon)
+            index = self.active_weapon_section.weapon_combo.findData(current_weapon)
             if index >= 0:
-                self.global_weapon_section.weapon_combo.setCurrentIndex(index)
+                self.active_weapon_section.weapon_combo.setCurrentIndex(index)
 
-        # Important: éviter l'appel automatique lors du chargement initial
-        current_index = self.global_weapon_section.weapon_combo.currentIndex()
-        if current_index > 0:  # Seulement si une arme valide est sélectionnée
+        # Load weapon parameters if a weapon is selected
+        current_index = self.active_weapon_section.weapon_combo.currentIndex()
+        if current_index > 0:
             self._on_weapon_changed(current_index)
 
     def _load_features_settings(self):
@@ -472,6 +549,23 @@ class ConfigTab(QWidget):
 
         self.features_section.auto_accept_feature.setChecked(
             features.get("auto_accept_enabled", False))
+
+        self.features_section.follow_rcs_feature.setChecked(
+            features.get("follow_rcs_enabled", False))
+
+        # Load Follow RCS configuration
+        follow_rcs_config = self.config_service.config.get("follow_rcs", {})
+
+        # Load color
+        color = follow_rcs_config.get("color", [0, 0, 255, 255])
+        self.features_section.current_color = QColor(color[0], color[1], color[2], color[3])
+        self.features_section.color_button.setStyleSheet(
+            f"background-color: rgb({color[0]}, {color[1]}, {color[2]});")
+
+        # Load dot size
+        dot_size = follow_rcs_config.get("dot_size", 3)
+        self.features_section.size_slider.setValue(dot_size)
+        self.features_section.size_value_label.setText(str(dot_size))
 
     def _load_hotkeys(self):
         """Load hotkeys configuration."""
@@ -489,14 +583,14 @@ class ConfigTab(QWidget):
         if index < 0:
             return
 
-        weapon_name = self.global_weapon_section.weapon_combo.currentData()
+        weapon_name = self.active_weapon_section.weapon_combo.currentData()
 
         if not weapon_name:
-            self.params_section.param_controls['multiple'].setValue(0)
-            self.params_section.param_controls['sleep_divider'].setValue(1.0)
-            self.params_section.param_controls['sleep_suber'].setValue(0.0)
-
-            # Emit signal with empty weapon name to clear selection
+            self.weapon_parameters_section.multiple_spin.setValue(0)
+            self.weapon_parameters_section.sleep_divider_spin.setValue(1.0)
+            self.weapon_parameters_section.sleep_suber_spin.setValue(0.0)
+            self.weapon_parameters_section.jitter_timing_spin.setValue(0.0)
+            self.weapon_parameters_section.jitter_movement_spin.setValue(0.0)
             self.weapon_changed.emit("")
             return
 
@@ -505,12 +599,11 @@ class ConfigTab(QWidget):
             self.logger.warning("Weapon profile not found: %s", weapon_name)
             return
 
-        self.params_section.param_controls['multiple'].setValue(
-            weapon.multiple)
-        self.params_section.param_controls['sleep_divider'].setValue(
-            weapon.sleep_divider)
-        self.params_section.param_controls['sleep_suber'].setValue(
-            weapon.sleep_suber)
+        self.weapon_parameters_section.multiple_spin.setValue(weapon.multiple)
+        self.weapon_parameters_section.sleep_divider_spin.setValue(weapon.sleep_divider)
+        self.weapon_parameters_section.sleep_suber_spin.setValue(weapon.sleep_suber)
+        self.weapon_parameters_section.jitter_timing_spin.setValue(weapon.jitter_timing)
+        self.weapon_parameters_section.jitter_movement_spin.setValue(weapon.jitter_movement)
 
         self.weapon_changed.emit(weapon_name)
 
@@ -629,82 +722,109 @@ class ConfigTab(QWidget):
             self.logger.error("Hotkey validation failed: %s", e)
             return False, [f"Validation error: {e}"]
 
-    def _save_global_config(self):
-        """Save global configuration."""
+    def _save_weapon_config(self):
+        """Save weapon and global configuration."""
         try:
-            new_sensitivity = self.global_weapon_section.global_sensitivity.value()
-            current_sensitivity = self.config_service.config.get(
-                "game_sensitivity", 1.0)
+            # Save global sensitivity first
+            new_sensitivity = self.weapon_parameters_section.global_sensitivity.value()
+            current_sensitivity = self.config_service.config.get("game_sensitivity", 1.0)
 
             if abs(new_sensitivity - current_sensitivity) > 0.001:
-                success = self.config_service.update_global_sensitivity(
-                    new_sensitivity)
+                success = self.config_service.update_global_sensitivity(new_sensitivity)
                 if not success:
-                    QMessageBox.warning(
-                        self, "Warning", "Sensitivity update failed")
+                    QMessageBox.warning(self, "Warning", "Sensitivity update failed")
                     return
             else:
                 self.config_service.config["game_sensitivity"] = new_sensitivity
 
+            # Save weapon-specific configuration if a weapon is selected
+            weapon_name = self.active_weapon_section.weapon_combo.currentData()
+            if weapon_name:
+                weapon = self.config_service.get_weapon_profile(weapon_name)
+                if weapon:
+                    sensitivity_changed = abs(weapon.game_sensitivity - new_sensitivity) > 0.001
+
+                    # Update weapon parameters
+                    weapon.multiple = self.weapon_parameters_section.multiple_spin.value()
+                    weapon.sleep_divider = self.weapon_parameters_section.sleep_divider_spin.value()
+                    weapon.sleep_suber = self.weapon_parameters_section.sleep_suber_spin.value()
+                    weapon.jitter_timing = self.weapon_parameters_section.jitter_timing_spin.value()
+                    weapon.jitter_movement = self.weapon_parameters_section.jitter_movement_spin.value()
+
+                    if sensitivity_changed:
+                        success = self.config_service.update_weapon_sensitivity(weapon_name, new_sensitivity)
+                        if not success:
+                            QMessageBox.warning(self, "Warning", "Weapon sensitivity update failed")
+                            return
+                    else:
+                        weapon.recalculate_pattern()
+
+                    # Save weapon profile
+                    success = self.config_service.save_weapon_profile(weapon)
+                    if not success:
+                        QMessageBox.warning(self, "Warning", "Weapon profile save failed")
+                        return
+
+            # Update follow RCS overlay sensitivity if changed
+            if self.follow_rcs_overlay and abs(new_sensitivity - current_sensitivity) > 0.001:
+                self.follow_rcs_overlay.set_sensitivity(new_sensitivity)
+
+            # Save global config
+            success = self.config_service.save_config()
+            if success:
+                QMessageBox.information(self, "Success", "Configuration saved successfully")
+                self.settings_saved.emit()
+            else:
+                QMessageBox.warning(self, "Warning", "Configuration save failed")
+
+        except Exception as e:
+            self.logger.error("Configuration save failed: %s", e)
+            QMessageBox.critical(self, "Error", f"Save error: {e}")
+
+    def _on_color_button_clicked(self):
+        """Handle color button click to open color picker."""
+        color = QColorDialog.getColor(
+            self.features_section.current_color,
+            self,
+            "Select Follow RCS Color",
+            QColorDialog.ColorDialogOption.ShowAlphaChannel
+        )
+
+        if color.isValid():
+            self.features_section.current_color = color
+            self.features_section.color_button.setStyleSheet(
+                f"background-color: rgb({color.red()}, {color.green()}, {color.blue()});")
+            self._save_follow_rcs_config()
+
+    def _on_size_slider_changed(self, value):
+        """Handle size slider value change."""
+        self.features_section.size_value_label.setText(str(value))
+        self._save_follow_rcs_config()
+
+    def _save_follow_rcs_config(self):
+        """Save Follow RCS configuration."""
+        try:
+            color = self.features_section.current_color
+            follow_rcs_config = {
+                "dot_size": self.features_section.size_slider.value(),
+                "color": [color.red(), color.green(), color.blue(), color.alpha()]
+            }
+            self.config_service.config["follow_rcs"] = follow_rcs_config
+
             success = self.config_service.save_config()
 
             if success:
-                QMessageBox.information(
-                    self, "Success", "Global configuration saved")
-                self.settings_saved.emit()
+                # Update overlay if it exists
+                if self.follow_rcs_overlay:
+                    self.follow_rcs_overlay.set_dot_size(follow_rcs_config["dot_size"])
+                    self.follow_rcs_overlay.set_color(follow_rcs_config["color"])
+
+                self.logger.debug("Follow RCS configuration saved")
             else:
-                QMessageBox.warning(self, "Warning", "Save failed")
+                self.logger.warning("Failed to save Follow RCS configuration")
 
         except Exception as e:
-            self.logger.error("Global config save failed: %s", e)
-            QMessageBox.critical(self, "Error", f"Save error: {e}")
-
-    def _save_weapon_config(self):
-        """Save weapon configuration."""
-        try:
-            weapon_name = self.global_weapon_section.weapon_combo.currentData()
-            if not weapon_name:
-                QMessageBox.warning(self, "Warning", "No weapon selected")
-                return
-
-            weapon = self.config_service.get_weapon_profile(weapon_name)
-            if not weapon:
-                return
-
-            new_sensitivity = self.global_weapon_section.global_sensitivity.value()
-            sensitivity_changed = abs(
-                weapon.game_sensitivity -
-                new_sensitivity) > 0.001
-
-            weapon.multiple = self.params_section.param_controls['multiple'].value(
-            )
-            weapon.sleep_divider = (
-                self.params_section.param_controls['sleep_divider'] .value())
-            weapon.sleep_suber = (
-                self.params_section.param_controls['sleep_suber'] .value())
-
-            if sensitivity_changed:
-                success = self.config_service.update_weapon_sensitivity(
-                    weapon_name, new_sensitivity)
-                if not success:
-                    QMessageBox.warning(
-                        self, "Warning", "Sensitivity update failed")
-                    return
-            else:
-                weapon.recalculate_pattern()
-
-            success = self.config_service.save_weapon_profile(weapon)
-
-            if success:
-                QMessageBox.information(
-                    self, "Success", "Weapon configuration saved")
-                self.settings_saved.emit()
-            else:
-                QMessageBox.warning(self, "Warning", "Save failed")
-
-        except Exception as e:
-            self.logger.error("Weapon config save failed: %s", e)
-            QMessageBox.critical(self, "Error", f"Save error: {e}")
+            self.logger.error("Follow RCS config save failed: %s", e)
 
     def _save_features_config(self):
         """Save features configuration."""
@@ -712,7 +832,8 @@ class ConfigTab(QWidget):
             features_settings = {
                 "tts_enabled": self.features_section.audio_feature.isChecked(),
                 "bomb_timer_enabled": self.features_section.bomb_timer_feature.isChecked(),
-                "auto_accept_enabled": self.features_section.auto_accept_feature.isChecked()
+                "auto_accept_enabled": self.features_section.auto_accept_feature.isChecked(),
+                "follow_rcs_enabled": self.features_section.follow_rcs_feature.isChecked()
             }
             self.config_service.config["features"] = features_settings
 
@@ -775,21 +896,21 @@ class ConfigTab(QWidget):
 
     def get_selected_weapon(self) -> str:
         """Get currently selected weapon name."""
-        index = self.global_weapon_section.weapon_combo.currentIndex()
+        index = self.active_weapon_section.weapon_combo.currentIndex()
         if index < 0:
             return ""
-        return self.global_weapon_section.weapon_combo.currentData() or ""
+        return self.active_weapon_section.weapon_combo.currentData() or ""
 
     def set_weapon_controls_enabled(self, enabled: bool):
         """Enable/disable weapon selection controls based on automatic detection status."""
         try:
-            self.global_weapon_section.weapon_combo.setEnabled(enabled)
+            self.active_weapon_section.weapon_combo.setEnabled(enabled)
 
             if not enabled:
-                self.global_weapon_section.weapon_combo.setToolTip(
+                self.active_weapon_section.weapon_combo.setToolTip(
                     "Weapon selection disabled - Automatic weapon detection is active")
             else:
-                self.global_weapon_section.weapon_combo.setToolTip(
+                self.active_weapon_section.weapon_combo.setToolTip(
                     "Select the active weapon for recoil compensation")
 
         except Exception as e:

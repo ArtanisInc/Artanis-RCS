@@ -6,3 +6,5 @@ __pycache__/
 *.pyo
 # Ignore log files
 *.log
+# Ignore virtual environment folders
+rcs/

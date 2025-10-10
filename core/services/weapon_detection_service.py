@@ -61,8 +61,6 @@ class WeaponDetectionService:
         self.detection_state = WeaponDetectionState()
         self.startup_time = time.time()
 
-        self.auto_weapon_switch = True
-        self.auto_rcs_control = True
         self.low_ammo_threshold = 5
 
         self.logger.debug("Weapon detection service initialized")
@@ -154,12 +152,10 @@ class WeaponDetectionService:
 
         weapon_changed = self.detection_state.update_weapon(target_weapon)
 
-        if weapon_changed and self.auto_weapon_switch:
-            self._handle_weapon_change(target_weapon,
-                                       player_state.active_weapon)
+        if weapon_changed:
+            self._handle_weapon_change(target_weapon)
 
-    def _handle_weapon_change(self, new_weapon: Optional[str],
-                              weapon_state: Optional[WeaponState]) -> None:
+    def _handle_weapon_change(self, new_weapon: Optional[str]) -> None:
         """Handle weapon change event with silent operation."""
         try:
             if new_weapon:
@@ -171,9 +167,11 @@ class WeaponDetectionService:
                     else:
                         self.logger.debug("Weapon reconfirmed: %s", new_weapon)
                 else:
-                    self.logger.warning("Failed to switch to: %s", new_weapon)
+                    self.logger.warning("Failed to switch to: %s (weapon not in profiles)", new_weapon)
             else:
-                self.logger.debug("No valid RCS weapon detected")
+                # Clear weapon when no valid weapon detected
+                self.recoil_service.set_weapon(None)
+                self.logger.debug("No valid RCS weapon detected - cleared weapon")
 
         except Exception as e:
             self.logger.error("Weapon change handling error: %s", e)
@@ -181,20 +179,20 @@ class WeaponDetectionService:
     def _process_rcs_control(self, player_state: PlayerState,
                              current_time: float) -> None:
         """Process automatic RCS enable/disable control."""
-        if not self.auto_rcs_control:
-            return
 
         should_enable_rcs = player_state.should_enable_rcs
         rcs_currently_active = self.recoil_service.active
 
         try:
             if should_enable_rcs and not rcs_currently_active:
-                if self.detection_state.current_weapon:
+                if self.recoil_service.current_weapon:
                     success = self.recoil_service.start_compensation(
                         allow_manual_when_auto_enabled=True)
                     if success:
                         self.detection_state.rcs_was_auto_enabled = True
                         self.logger.debug("RCS auto-enabled by GSI detection")
+                else:
+                    self.logger.debug("Cannot start RCS: no weapon set in recoil service")
 
             elif (not should_enable_rcs and rcs_currently_active and
                   self.detection_state.rcs_was_auto_enabled):
@@ -248,10 +246,6 @@ class WeaponDetectionService:
     def configure(self, config: Dict[str, Any]) -> bool:
         """Update detection configuration."""
         try:
-            self.auto_weapon_switch = config.get("auto_weapon_switch",
-                                                 self.auto_weapon_switch)
-            self.auto_rcs_control = config.get("auto_rcs_control",
-                                               self.auto_rcs_control)
             self.low_ammo_threshold = config.get("low_ammo_threshold",
                                                  self.low_ammo_threshold)
 
