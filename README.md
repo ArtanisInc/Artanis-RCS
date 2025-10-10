@@ -7,6 +7,9 @@
   <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows-lightgrey.svg" /></a>
   <a href="https://github.com/ArtanisInc/Artanis-RCS/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" /></a>
 </p>
+<p align="center">
+  <img src="https://i.imgur.com/TcAqjOp.png" alt="Artanis RCS Logo" width="500"/>
+</p>
 
 > [!CAUTION]
 > This software is provided for educational and research purposes only.
