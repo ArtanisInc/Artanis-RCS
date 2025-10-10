@@ -104,6 +104,7 @@ artanis-rcs/
 - **numpy**: Mathematical calculations and array operations
 - **pywin32**: Windows API integration for input simulation and window management
 - **DXcam**: Image processing for screen capture and analysis
+- **QtAwesome**: Font Awesome for Qt Applications
 
 ### **Installation Steps**
 
