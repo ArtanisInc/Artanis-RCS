@@ -275,26 +275,6 @@ Each weapon includes customizable compensation parameters:
 - **Debug Mode**: Enable verbose logging by setting `level=logging.DEBUG` in `main.py`
 
 
-## 🤝 **Contributing**
-
-### **Pull Request Process**
-1. Fork the repository
-2. Create feature branch from main
-3. Implement changes with proper testing
-4. Update documentation as needed
-5. Submit pull request with detailed description
-
-
-## 🆘 **Support**
-
-### **Issue Reporting**
-When reporting issues, please include:
-- Operating system version
-- Python version
-- Complete error logs
-- Steps to reproduce the problem
-
-
 ## 📄 **License & Attribution**
 
 ### **License**
