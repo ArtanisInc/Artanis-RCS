@@ -113,6 +113,8 @@ class WeaponManager:
                     multiple=weapon_config.get("multiple", 6),
                     sleep_divider=weapon_config.get("sleep_divider", 6.0),
                     sleep_suber=weapon_config.get("sleep_suber", 0.0),
+                    jitter_timing=weapon_config.get("jitter_timing", 0.0),
+                    jitter_movement=weapon_config.get("jitter_movement", 0.0),
                     game_sensitivity=game_sensitivity
                 )
 
