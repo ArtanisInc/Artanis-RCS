@@ -320,6 +320,21 @@ class RecoilService:
         sum_x = 0.0
         sum_y = 0.0
 
+        # Calculate per-spray trajectory variation (Humanization)
+        scale_x = 1.0
+        scale_y = 1.0
+        
+        if weapon.jitter_movement > 0:
+            # jitter_movement is treated as a percentage deviation (e.g., 5.0 = 5%)
+            # Sigma = deviation / 2.0 means ~95% of sprays are within +/- deviation.
+            deviation = weapon.jitter_movement / 100.0
+            sigma = deviation / 2.0
+            
+            scale_x = random.gauss(1.0, sigma)
+            scale_y = random.gauss(1.0, sigma)
+            
+            self.logger.debug("Spray variation: scale_x=%.3f, scale_y=%.3f", scale_x, scale_y)
+
         for i, point in enumerate(pattern):
             if self.weapon_change_event.is_set():
                 self.logger.debug("Weapon change detected during sequence at index %s", i)
@@ -335,16 +350,11 @@ class RecoilService:
                 self.timing_service.combined_sleep(accumulated_time, begin_time)
                 continue
 
-            # Apply movement jitter if enabled (Gaussian distribution)
-            jitter_factor = 1.0
-            if weapon.jitter_movement > 0:
-                # Gaussian jitter: std_dev = jitter% / 3 (99.7% within +/- jitter%)
-                std_dev = (weapon.jitter_movement / 100.0) / 3.0
-                jitter_factor = 1.0 + random.gauss(0, std_dev)
-
-            # Apply jitter to raw recoil tracking
-            jittered_dx = point.dx * jitter_factor
-            jittered_dy = point.dy * jitter_factor
+            # Apply trajectory variation
+            # The scale is constant for this spray, preserving the pattern shape
+            # but changing its overall size/intensity.
+            jittered_dx = point.dx * scale_x
+            jittered_dy = point.dy * scale_y
 
             self.raw_recoil_x += -jittered_dx
             self.raw_recoil_y += jittered_dy

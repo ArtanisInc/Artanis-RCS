@@ -34,8 +34,8 @@
             "multiple": 6,
             "sleep_divider": 6.0,
             "sleep_suber": -0.1,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "m4a4",
@@ -44,8 +44,8 @@
             "multiple": 4,
             "sleep_divider": 4,
             "sleep_suber": -0.5,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "m4a1",
@@ -54,8 +54,8 @@
             "multiple": 4,
             "sleep_divider": 4.0,
             "sleep_suber": -0.6,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "galil",
@@ -64,8 +64,8 @@
             "multiple": 4,
             "sleep_divider": 4,
             "sleep_suber": -0.8,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "famas",
@@ -74,8 +74,8 @@
             "multiple": 4,
             "sleep_divider": 4,
             "sleep_suber": -0.4,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "sg553",
@@ -84,8 +84,8 @@
             "multiple": 4,
             "sleep_divider": 4,
             "sleep_suber": -0.9,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "aug",
@@ -94,8 +94,8 @@
             "multiple": 4,
             "sleep_divider": 4,
             "sleep_suber": -0.9,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "p90",
@@ -104,8 +104,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": -0.7,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "bizon",
@@ -114,8 +114,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": 0.9,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "ump45",
@@ -124,8 +124,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": -0.4,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "mac10",
@@ -134,8 +134,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": -2.2,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "mp5sd",
@@ -144,8 +144,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": 0,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "mp7",
@@ -154,8 +154,8 @@
             "multiple": 3,
             "sleep_divider": 3.0,
             "sleep_suber": 0.1,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "mp9",
@@ -164,8 +164,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": -0.3,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "m249",
@@ -174,8 +174,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": -1,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "negev",
@@ -184,8 +184,8 @@
             "multiple": 3,
             "sleep_divider": 3.0,
             "sleep_suber": -1.5,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         },
         {
             "name": "cz75",
@@ -194,8 +194,8 @@
             "multiple": 3,
             "sleep_divider": 3,
             "sleep_suber": -3,
-            "jitter_timing": 0.0,
-            "jitter_movement": 0.0
+            "jitter_timing": 1.0,
+            "jitter_movement": 1.0
         }
     ]
 }
