@@ -306,6 +306,7 @@ class ConfigService:
                 {"name": "mp7", "display_name": "MP7", "length": 30, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": 0.1, "jitter_timing": 0.0, "jitter_movement": 0.0},
                 {"name": "mp9", "display_name": "MP9", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.3, "jitter_timing": 0.0, "jitter_movement": 0.0},
                 {"name": "m249", "display_name": "M249", "length": 100, "multiple": 3, "sleep_divider": 3, "sleep_suber": -1, "jitter_timing": 0.0, "jitter_movement": 0.0},
+                {"name": "negev", "display_name": "NEGEV", "length": 150, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": -1.5, "jitter_timing": 0.0, "jitter_movement": 0.0},
                 {"name": "cz75", "display_name": "CZ75-AUTO", "length": 12, "multiple": 3, "sleep_divider": 3, "sleep_suber": -3, "jitter_timing": 0.0, "jitter_movement": 0.0}
             ]
         }
