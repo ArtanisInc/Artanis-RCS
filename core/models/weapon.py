@@ -116,7 +116,7 @@ class WeaponProfile:
         self._calculate_pattern()
 
         self.logger.debug(
-            "Weapon '%s' initialized with %s calculated points", name, len(self.calculated_pattern))
+            f"Weapon '{name}' initialized with {len(self.calculated_pattern)} calculated points")
 
     def _calculate_pattern(self) -> None:
         """Calculate subdivided pattern using precise algorithm."""
@@ -164,7 +164,7 @@ class WeaponProfile:
         """Force recalculation of pattern after parameter changes."""
         self._calculate_pattern()
         self.logger.info(
-            "Pattern recalculated: %s points", len(self.calculated_pattern))
+            f"Pattern recalculated: {len(self.calculated_pattern)} points")
 
     def update_sensitivity(
             self,
@@ -190,7 +190,7 @@ class WeaponProfile:
                 self.game_sensitivity = new_sensitivity
                 self.recalculate_pattern()
 
-                self.logger.info("Sensitivity updated: %s", new_sensitivity)
+                self.logger.info(f"Sensitivity updated: {new_sensitivity}")
                 return True
             else:
                 self.logger.error(
@@ -198,7 +198,7 @@ class WeaponProfile:
                 return False
 
         except Exception as e:
-            self.logger.error("Sensitivity update failed: %s", e)
+            self.logger.error(f"Sensitivity update failed: {e}")
             return False
 
     def to_dict(self) -> Dict[str, Any]:

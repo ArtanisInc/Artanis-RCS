@@ -137,14 +137,14 @@ def initialize_system() -> Tuple:
             "Auto Accept",
             f"Hotkeys ({len(hotkey_service.hotkey_mappings)} active)"
         ]
-        logger.info("Core services initialized: %s", ", ".join(services_summary))
+        logger.info(f"Core services initialized: {', '.join(services_summary)}")
 
         logger.info("System initialized successfully")
         return (config_service, input_service, recoil_service, hotkey_service,
                 tts_service, gsi_service, weapon_detection_service, bomb_timer_service, auto_accept_service)
 
     except Exception as e:
-        logger.critical("System initialization failed: %s", e, exc_info=True)
+        logger.critical(f"System initialization failed: {e}", exc_info=True)
         raise
 
 
@@ -172,7 +172,7 @@ def setup_gsi_integration(gsi_service: GSIService,
         return True
 
     except Exception as e:
-        logger.error("GSI integration setup failed: %s", e)
+        logger.error(f"GSI integration setup failed: {e}")
         return False
 
 
@@ -229,7 +229,7 @@ def create_gui(app: QApplication, config_service, recoil_service, hotkey_service
         return window
 
     except Exception as e:
-        logger.critical("GUI creation failed: %s", e, exc_info=True)
+        logger.critical(f"GUI creation failed: {e}", exc_info=True)
         raise
 
 
@@ -277,7 +277,7 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
         logger.debug("Hotkey callbacks configured")
 
     except Exception as e:
-        logger.error("Hotkey callback setup failed: %s", e)
+        logger.error(f"Hotkey callback setup failed: {e}")
 
 
 def main():
@@ -324,7 +324,7 @@ def main():
                 hotkey_service.stop_monitoring()
                 logger.debug("Hotkey service stopped.")
             except Exception as e:
-                logger.error("Error stopping hotkey service: %s", e)
+                logger.error(f"Error stopping hotkey service: {e}")
 
             try:
                 if recoil_service.active:
@@ -332,7 +332,7 @@ def main():
                     recoil_service.stop_compensation()
                     logger.debug("Recoil compensation stopped.")
             except Exception as e:
-                logger.error("Error stopping recoil compensation: %s", e)
+                logger.error(f"Error stopping recoil compensation: {e}")
 
             try:
                 if weapon_detection_service:
@@ -340,7 +340,7 @@ def main():
                     weapon_detection_service.disable()
                     logger.debug("Weapon detection service disabled.")
             except Exception as e:
-                logger.error("Error disabling weapon detection service: %s", e)
+                logger.error(f"Error disabling weapon detection service: {e}")
 
             try:
                 if gsi_service:
@@ -348,7 +348,7 @@ def main():
                     gsi_service.stop_server()
                     logger.debug("GSI service stopped.")
             except Exception as e:
-                logger.error("Error stopping GSI service: %s", e)
+                logger.error(f"Error stopping GSI service: {e}")
 
             try:
                 if bomb_timer_service:
@@ -356,7 +356,7 @@ def main():
                     bomb_timer_service.stop()
                     logger.debug("Bomb timer service stopped.")
             except Exception as e:
-                logger.error("Error stopping bomb timer service: %s", e)
+                logger.error(f"Error stopping bomb timer service: {e}")
 
             try:
                 if auto_accept_service:
@@ -364,14 +364,14 @@ def main():
                     auto_accept_service.disable()
                     logger.debug("Auto accept service disabled.")
             except Exception as e:
-                logger.error("Error disabling auto accept service: %s", e)
+                logger.error(f"Error disabling auto accept service: {e}")
 
             try:
                 logger.debug("Stopping TTS service...")
                 tts_service.stop()
                 logger.debug("TTS service stopped.")
             except Exception as e:
-                logger.error("Error stopping TTS service: %s", e)
+                logger.error(f"Error stopping TTS service: {e}")
             logger.debug("Cleanup complete.")
 
         app.aboutToQuit.connect(cleanup_on_exit)
@@ -382,7 +382,7 @@ def main():
         sys.exit(app.exec())
 
     except Exception as e:
-        logger.critical("Fatal error: %s", e, exc_info=True)
+        logger.critical(f"Fatal error: {e}", exc_info=True)
         QMessageBox.critical(None, "Fatal Error",
                              f"A fatal error occurred: {e}")
 
