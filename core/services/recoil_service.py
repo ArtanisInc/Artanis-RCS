@@ -35,6 +35,7 @@ class RecoilService:
         self.stop_event = threading.Event()
         self.weapon_change_event = threading.Event()
         self._last_weapon_for_compensation = None
+        self.weapon_lock = threading.Lock()
 
         self.weapon_detection_service = None
         self.follow_rcs_overlay = None
@@ -63,50 +64,52 @@ class RecoilService:
 
     def set_weapon(self, weapon_name: Optional[str]) -> bool:
         """Set current weapon for compensation with conditional TTS notification."""
-        if not weapon_name:
-            weapon_changed = self.current_weapon is not None
+        with self.weapon_lock:
+            if not weapon_name:
+                weapon_changed = self.current_weapon is not None
 
-            if self.active:
-                self.logger.debug("Stopping active compensation before weapon deselection")
-                success = self.stop_compensation()
-                if not success:
-                    self.logger.warning("Failed to stop compensation during weapon deselection")
+                if self.active:
+                    self.logger.debug("Stopping active compensation before weapon deselection")
+                    success = self.stop_compensation()
+                    if not success:
+                        self.logger.warning("Failed to stop compensation during weapon deselection")
 
-            self.current_weapon = None
-            self.logger.info("Current weapon: None")
+                self.current_weapon = None
+                self.logger.info("Current weapon: None")
+
+                if weapon_changed:
+                    self._notify_status_changed()
+
+                return True
+
+            if weapon_name not in self.config_service.weapon_profiles:
+                self.logger.warning(f"Weapon not found: {weapon_name}")
+                return False
+
+            weapon_changed = self.current_weapon != weapon_name
+            self.current_weapon = weapon_name
+
+            if weapon_changed:
+                self.logger.info(f"Current weapon: {weapon_name}")
+            else:
+                self.logger.debug(f"Weapon reconfirmed: {weapon_name}")
+
+            if weapon_changed and self.active:
+                self.weapon_change_event.set()
+                self.logger.debug(
+                    "Weapon change signal sent to compensation thread")
 
             if weapon_changed:
                 self._notify_status_changed()
 
             return True
 
-        if weapon_name not in self.config_service.weapon_profiles:
-            self.logger.warning("Weapon not found: %s", weapon_name)
-            return False
-
-        weapon_changed = self.current_weapon != weapon_name
-        self.current_weapon = weapon_name
-
-        if weapon_changed:
-            self.logger.info("Current weapon: %s", weapon_name)
-        else:
-            self.logger.debug("Weapon reconfirmed: %s", weapon_name)
-
-        if weapon_changed and self.active:
-            self.weapon_change_event.set()
-            self.logger.debug(
-                "Weapon change signal sent to compensation thread")
-
-        if weapon_changed:
-            self._notify_status_changed()
-
-        return True
-
     def get_current_weapon(self) -> Optional[WeaponProfile]:
         """Get current weapon profile."""
-        if not self.current_weapon:
-            return None
-        return self.config_service.get_weapon_profile(self.current_weapon)
+        with self.weapon_lock:
+            if not self.current_weapon:
+                return None
+            return self.config_service.get_weapon_profile(self.current_weapon)
 
     def start_compensation(
             self,
@@ -161,7 +164,7 @@ class RecoilService:
             return True
 
         except Exception as e:
-            self.logger.error("Compensation start failed: %s", e)
+            self.logger.error(f"Compensation start failed: {e}")
             self.active = False
             return False
 
@@ -173,7 +176,7 @@ class RecoilService:
         try:
             self.stop_event.set()
             if self.running_thread and self.running_thread.is_alive():
-                self.running_thread.join(timeout=1.0)
+                self.running_thread.join(timeout=3.0)
 
             self.active = False
 
@@ -190,7 +193,7 @@ class RecoilService:
             return True
 
         except Exception as e:
-            self.logger.error("Compensation stop failed: %s", e)
+            self.logger.error(f"Compensation stop failed: {e}")
             return False
 
     def is_manual_activation_allowed(self) -> bool:
@@ -199,7 +202,7 @@ class RecoilService:
 
     def _is_manual_activation_blocked(self) -> bool:
         """Determine if manual activation should be blocked."""
-        # Bloquer l'activation manuelle si la détection automatique est active
+        # Block manual activation if automatic weapon detection is active
         if (self.weapon_detection_service and
                 self.weapon_detection_service.enabled):
             self.logger.debug(
@@ -243,7 +246,7 @@ class RecoilService:
             try:
                 callback(status)
             except Exception as e:
-                self.logger.error("Callback notification failed: %s", e)
+                self.logger.error(f"Callback notification failed: {e}")
 
     def configure_tts(self, enabled: bool) -> bool:
         """Configure TTS service on-the-fly."""
@@ -269,8 +272,7 @@ class RecoilService:
 
                 if self._last_weapon_for_compensation != weapon.name:
                     self.logger.debug(
-                        "Weapon change during compensation: %s -> %s",
-                        self._last_weapon_for_compensation, weapon.name)
+                        f"Weapon change during compensation: {self._last_weapon_for_compensation} -> {weapon.name}")
                     self._last_weapon_for_compensation = weapon.name
 
                 self.weapon_change_event.clear()
@@ -294,7 +296,7 @@ class RecoilService:
                         self.follow_rcs_overlay.update_position(0.0, 0.0)
 
             except Exception as e:
-                self.logger.error("Compensation loop error: %s", e, exc_info=True)
+                self.logger.error(f"Compensation loop error: {e}", exc_info=True)
 
             self.timing_service.combined_sleep_2(1)
 
@@ -337,11 +339,11 @@ class RecoilService:
 
         for i, point in enumerate(pattern):
             if self.weapon_change_event.is_set():
-                self.logger.debug("Weapon change detected during sequence at index %s", i)
+                self.logger.debug(f"Weapon change detected during sequence at index {i}")
                 return False
 
             if not self.input_service.is_key_pressed(key_trigger) or self.stop_event.is_set():
-                self.logger.debug("Sequence interrupted at index %s", i)
+                self.logger.debug(f"Sequence interrupted at index {i}")
                 return False
 
             if i == 0:

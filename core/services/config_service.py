@@ -90,7 +90,7 @@ class WeaponManager:
                 if not ConfigurationValidator.validate_weapon_data(
                         weapon_config):
                     self.logger.warning(
-                        "Invalid weapon configuration: %s", weapon_config.get('name', 'unknown'))
+                        f"Invalid weapon configuration: {weapon_config.get('name', 'unknown')}")
                     continue
 
                 name = weapon_config["name"]
@@ -101,7 +101,7 @@ class WeaponManager:
                     csv_file, game_sensitivity)
                 if not recoil_data:
                     self.logger.warning(
-                        "Pattern not found for weapon: %s", name)
+                        f"Pattern not found for weapon: {name}")
                     continue
 
                 # Create weapon profile
@@ -119,18 +119,17 @@ class WeaponManager:
                 )
 
                 profiles[name] = profile
-                self.logger.debug("Loaded weapon profile: %s", name)
+                self.logger.debug(f"Loaded weapon profile: {name}")
 
             except Exception as e:
                 self.logger.error(
-                    "Failed to load weapon %s: %s",
-                    weapon_config.get('name', 'unknown'), e)
+                    f"Failed to load weapon {weapon_config.get('name', 'unknown')}: {e}")
                 continue
 
         self.profiles = profiles
         if profiles:
             weapon_names = ", ".join(sorted(profiles.keys()))
-            self.logger.info("Loaded %s weapon profiles: %s", len(profiles), weapon_names)
+            self.logger.info(f"Loaded {len(profiles)} weapon profiles: {weapon_names}")
         else:
             self.logger.warning("No weapon profiles loaded")
         return profiles
@@ -162,7 +161,7 @@ class WeaponManager:
                     success_count += 1
             except Exception as e:
                 self.logger.warning(
-                    "Failed to update sensitivity for %s: %s", weapon_name, e)
+                    f"Failed to update sensitivity for {weapon_name}: {e}")
 
         return success_count
 
@@ -201,7 +200,7 @@ class ConfigService:
             return True
 
         except Exception as e:
-            self.logger.error("Configuration loading failed: %s", e)
+            self.logger.error(f"Configuration loading failed: {e}")
             raise RuntimeError(f"Failed to load configuration: {e}")
 
     def save_config(self) -> bool:
@@ -218,7 +217,7 @@ class ConfigService:
             return success
 
         except Exception as e:
-            self.logger.error("Configuration save error: %s", e)
+            self.logger.error(f"Configuration save error: {e}")
             raise RuntimeError(f"Failed to save configuration: {e}")
 
     def _parse_and_validate_config(self) -> None:
@@ -227,7 +226,7 @@ class ConfigService:
         game_sensitivity = self.config.get("game_sensitivity", 1.0)
         if not ConfigurationValidator.validate_sensitivity(game_sensitivity):
             self.logger.warning(
-                "Invalid global sensitivity %s, using default", game_sensitivity)
+                f"Invalid global sensitivity {game_sensitivity}, using default")
             game_sensitivity = 1.0
             self.config["game_sensitivity"] = game_sensitivity
 
@@ -291,22 +290,23 @@ class ConfigService:
                 "toggle_weapon_detection": "HOME"
             },
             "weapons": [
-                {"name": "ak47", "display_name": "AK-47", "length": 30, "multiple": 6, "sleep_divider": 6, "sleep_suber": -0.1, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "m4a4", "display_name": "M4A4", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.5, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "m4a1", "display_name": "M4A1-S", "length": 20, "multiple": 4, "sleep_divider": 4.0, "sleep_suber": -0.6, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "galil", "display_name": "Galil AR", "length": 35, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.8, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "famas", "display_name": "FAMAS", "length": 25, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.4, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "sg553", "display_name": "SG 553", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "aug", "display_name": "AUG", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "p90", "display_name": "P90", "length": 50, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.7, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "bizon", "display_name": "PP-BIZON", "length": 64, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0.9, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "ump45", "display_name": "UMP-45", "length": 25, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.4, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "mac10", "display_name": "MAC-10", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -2.2, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "mp5sd", "display_name": "MP5-SD", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "mp7", "display_name": "MP7", "length": 30, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": 0.1, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "mp9", "display_name": "MP9", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.3, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "m249", "display_name": "M249", "length": 100, "multiple": 3, "sleep_divider": 3, "sleep_suber": -1, "jitter_timing": 0.0, "jitter_movement": 0.0},
-                {"name": "cz75", "display_name": "CZ75-AUTO", "length": 12, "multiple": 3, "sleep_divider": 3, "sleep_suber": -3, "jitter_timing": 0.0, "jitter_movement": 0.0}
+                {"name": "ak47", "display_name": "AK-47", "length": 30, "multiple": 6, "sleep_divider": 6, "sleep_suber": -0.1, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "m4a4", "display_name": "M4A4", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.5, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "m4a1", "display_name": "M4A1-S", "length": 20, "multiple": 4, "sleep_divider": 4.0, "sleep_suber": -0.6, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "galil", "display_name": "Galil AR", "length": 35, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.8, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "famas", "display_name": "FAMAS", "length": 25, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.4, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "sg553", "display_name": "SG 553", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "aug", "display_name": "AUG", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "p90", "display_name": "P90", "length": 50, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.7, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "bizon", "display_name": "PP-BIZON", "length": 64, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0.9, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "ump45", "display_name": "UMP-45", "length": 25, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.4, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "mac10", "display_name": "MAC-10", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -2.2, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "mp5sd", "display_name": "MP5-SD", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "mp7", "display_name": "MP7", "length": 30, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": 0.1, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "mp9", "display_name": "MP9", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.3, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "m249", "display_name": "M249", "length": 100, "multiple": 3, "sleep_divider": 3, "sleep_suber": -1, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "negev", "display_name": "NEGEV", "length": 150, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": -1.5, "jitter_timing": 3.0, "jitter_movement": 5.0},
+                {"name": "cz75", "display_name": "CZ75-AUTO", "length": 12, "multiple": 3, "sleep_divider": 3, "sleep_suber": -3, "jitter_timing": 3.0, "jitter_movement": 5.0}
             ]
         }
         self.logger.info("Created default configuration")
@@ -332,8 +332,7 @@ class ConfigService:
             return self.save_config()
         except Exception as e:
             self.logger.error(
-                "Failed to save weapon profile %s: %s",
-                profile.name, e)
+                f"Failed to save weapon profile {profile.name}: {e}")
             return False
 
     def get_weapon_display_name(self, internal_name: str) -> Optional[str]:
@@ -352,7 +351,7 @@ class ConfigService:
                 return weapon_data.get("display_name", internal_name)
 
         self.logger.warning(
-            "Display name not found for weapon: %s", internal_name)
+            f"Display name not found for weapon: {internal_name}")
         return internal_name
 
     def update_weapon_sensitivity(
@@ -367,7 +366,7 @@ class ConfigService:
                 self.config["game_sensitivity"] = new_sensitivity
             return success
         except (KeyError, ValueError) as e:
-            self.logger.error("Weapon sensitivity update failed: %s", e)
+            self.logger.error(f"Weapon sensitivity update failed: {e}")
             return False
 
     def update_global_sensitivity(self, new_sensitivity: float) -> bool:
@@ -380,12 +379,12 @@ class ConfigService:
             if success_count > 0:
                 self.config["game_sensitivity"] = new_sensitivity
                 self.logger.info(
-                    "Global sensitivity updated: %s (%s/%s weapons)", new_sensitivity, success_count, total_weapons)
+                    f"Global sensitivity updated: {new_sensitivity} ({success_count}/{total_weapons} weapons)")
 
             return success_count == total_weapons
 
         except ValueError as e:
-            self.logger.error("Global sensitivity update failed: %s", e)
+            self.logger.error(f"Global sensitivity update failed: {e}")
             return False
 
     def get_hotkey(self, key: str, default=None) -> Any:
@@ -398,7 +397,7 @@ class ConfigService:
             self.hotkeys.update(hotkeys)
             return self.save_config()
         except Exception as e:
-            self.logger.error("Failed to save hotkeys: %s", e)
+            self.logger.error(f"Failed to save hotkeys: {e}")
             return False
 
     def get_weapon_hotkeys(self) -> Dict[str, str]:
@@ -421,7 +420,7 @@ class ConfigService:
             self.hotkeys[weapon_name] = hotkey
             return self.save_config()
         except Exception as e:
-            self.logger.error("Failed to assign hotkey: %s", e)
+            self.logger.error(f"Failed to assign hotkey: {e}")
             return False
 
     def remove_weapon_hotkey(self, weapon_name: str) -> bool:
@@ -432,5 +431,5 @@ class ConfigService:
                 return self.save_config()
             return True
         except Exception as e:
-            self.logger.error("Failed to remove hotkey assignment: %s", e)
+            self.logger.error(f"Failed to remove hotkey assignment: {e}")
             return False

@@ -68,8 +68,10 @@ class BombTimerService(QObject):
             self.current_player_state = player_state
             self.has_defuse_kit = player_state.has_defuse_kit
 
+            # Start timer when bomb is planted
             if player_state.bomb_planted and not self.bomb_timer_active:
                 self.bomb_planted_signal.emit()
+            # Stop timer when bomb is no longer planted (defused, exploded, or round ended)
             elif not player_state.bomb_planted and self.bomb_timer_active:
                 self.bomb_defused_signal.emit()
 

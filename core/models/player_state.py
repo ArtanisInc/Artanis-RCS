@@ -126,7 +126,6 @@ class WeaponState:
 class PlayerState:
     """Complete player state from GSI."""
 
-    activity: str
     health: int
     armor: int
     flashing: int
@@ -152,10 +151,9 @@ class PlayerState:
     @property
     def is_playing(self) -> bool:
         """Check if player is in active gameplay."""
-        # player activity state doesn't work anymore...
-        # return self.activity.lower() == "playing"
-        activity_lower = self.activity.lower()
-        return activity_lower in ["playing", "unknown"]
+        # CS2 GSI doesn't provide reliable activity state
+        # Gameplay detection is handled via health check in is_combat_ready
+        return True
 
     @property
     def is_combat_ready(self) -> bool:

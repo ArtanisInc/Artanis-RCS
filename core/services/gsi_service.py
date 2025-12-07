@@ -230,7 +230,7 @@ class GSIService:
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="GSI")
 
         self._tracked_fields = {
-            'activity', 'health', 'armor', 'flashing', 'burning',
+            'health', 'armor', 'flashing', 'burning',
             'active_weapon_name', 'active_weapon_ammo', 'bomb_planted', 'has_defuse_kit'
         }
         self._last_field_values: Dict[str, Any] = {}
@@ -360,7 +360,6 @@ class GSIService:
     def _extract_tracked_fields(self, player_state: PlayerState) -> Dict[str, Any]:
         """Extract fields we want to track for changes."""
         return {
-            'activity': player_state.activity,
             'health': player_state.health,
             'armor': player_state.armor,
             'flashing': player_state.flashing,
@@ -405,7 +404,6 @@ class GSIService:
             if not player_data:
                 return None
 
-            activity = player_data.get("activity", "unknown")
             state = player_data.get("state", {})
             weapons_data = player_data.get("weapons", {})
 
@@ -423,7 +421,6 @@ class GSIService:
                     break
 
             return PlayerState(
-                activity=activity,
                 health=state.get("health", 0),
                 armor=state.get("armor", 0),
                 flashing=state.get("flashing", 0),
