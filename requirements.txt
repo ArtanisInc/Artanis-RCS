@@ -1,7 +1,16 @@
+# GUI Framework
 PySide6
+
+# Visualization and computation
 matplotlib
 numpy
+
+# Windows API integration
 pywin32
+
+# UI theming and icons
 PyQtDarkTheme
-dxcam
 QtAwesome
+
+# Screen capture
+dxcam

@@ -255,8 +255,7 @@ def setup_hotkey_callbacks(app: QApplication, main_window, recoil_service, hotke
 
     def exit_action():
         """Exit application."""
-        logger.debug("Closing application via hotkey")
-        os._exit(0)
+        main_window.exit_requested_signal.emit()
 
     def weapon_select_action(weapon_name: str):
         """Select weapon via hotkey with conditional TTS announcement."""

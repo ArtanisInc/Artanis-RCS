@@ -2,6 +2,7 @@
 Weapon detection service for automatic RCS control.
 """
 import logging
+import threading
 import time
 from typing import Optional, Dict, Any
 
@@ -10,9 +11,10 @@ from core.services.recoil_service import RecoilService
 
 
 class WeaponDetectionState:
-    """Tracks weapon detection state."""
+    """Tracks weapon detection state with thread safety."""
 
     def __init__(self):
+        self._lock = threading.Lock()
         self.current_weapon: Optional[str] = None
         self.previous_weapon: Optional[str] = None
         self.rcs_was_auto_enabled: bool = False
@@ -21,33 +23,36 @@ class WeaponDetectionState:
         self.weapon_change_count: int = 0
 
     def update_weapon(self, weapon_name: Optional[str]) -> bool:
-        """Update current weapon and detect changes."""
-        if weapon_name != self.current_weapon:
-            self.previous_weapon = self.current_weapon
-            self.current_weapon = weapon_name
-            self.weapon_change_count += 1
-            return True
-        return False
+        """Update current weapon and detect changes (thread-safe)."""
+        with self._lock:
+            if weapon_name != self.current_weapon:
+                self.previous_weapon = self.current_weapon
+                self.current_weapon = weapon_name
+                self.weapon_change_count += 1
+                return True
+            return False
 
     def update_ammo(self, ammo_count: int) -> bool:
-        """Update ammo count and detect state changes."""
-        current_is_empty = ammo_count == 0
-        previous_was_empty = self.last_ammo_count == 0
+        """Update ammo count and detect state changes (thread-safe)."""
+        with self._lock:
+            current_is_empty = ammo_count == 0
+            previous_was_empty = self.last_ammo_count == 0
 
-        if (self.last_ammo_count >= 0 and
-                current_is_empty != previous_was_empty):
+            if (self.last_ammo_count >= 0 and
+                    current_is_empty != previous_was_empty):
+                self.last_ammo_count = ammo_count
+                return True
+
             self.last_ammo_count = ammo_count
-            return True
-
-        self.last_ammo_count = ammo_count
-        return False
+            return False
 
     def reset(self):
-        """Reset detection state."""
-        self.current_weapon = None
-        self.previous_weapon = None
-        self.rcs_was_auto_enabled = False
-        self.last_ammo_count = -1
+        """Reset detection state (thread-safe)."""
+        with self._lock:
+            self.current_weapon = None
+            self.previous_weapon = None
+            self.rcs_was_auto_enabled = False
+            self.last_ammo_count = -1
 
 
 class WeaponDetectionService:
@@ -81,7 +86,7 @@ class WeaponDetectionService:
                 self.recoil_service.current_weapon = None
 
             # Always notify status change when detection state changes
-            self.recoil_service._notify_status_changed()
+            self.recoil_service.notify_status_changed()
 
             self.logger.info("Weapon detection enabled")
 
@@ -107,7 +112,7 @@ class WeaponDetectionService:
             self.detection_state.reset()
 
             # Notify RecoilService to update UI status when detection is disabled
-            self.recoil_service._notify_status_changed()
+            self.recoil_service.notify_status_changed()
 
             self.logger.info("Weapon detection disabled")
 

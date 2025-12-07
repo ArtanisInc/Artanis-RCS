@@ -91,10 +91,13 @@ class ConfigRepository:
             return config
 
         except json.JSONDecodeError as e:
-            self.logger.error(f"JSON decode error: {e}")
+            self.logger.error(f"JSON decode error in {self.config_file}: {e}")
+            return {}
+        except (IOError, OSError) as e:
+            self.logger.error(f"Failed to read configuration file {self.config_file}: {e}")
             return {}
         except Exception as e:
-            self.logger.error(f"Configuration loading failed: {e}")
+            self.logger.critical(f"Unexpected error loading configuration: {e}", exc_info=True)
             return {}
 
     def _validate_config_schema(self, config: Dict[str, Any]) -> List[str]:
@@ -147,8 +150,14 @@ class ConfigRepository:
             self.logger.debug("Configuration saved successfully")
             return True
 
+        except (IOError, OSError) as e:
+            self.logger.error(f"Failed to write configuration file {self.config_file}: {e}")
+            return False
+        except (TypeError, ValueError) as e:
+            self.logger.error(f"Invalid configuration data for JSON serialization: {e}")
+            return False
         except Exception as e:
-            self.logger.error(f"Configuration save failed: {e}")
+            self.logger.critical(f"Unexpected error saving configuration: {e}", exc_info=True)
             return False
 
 

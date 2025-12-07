@@ -189,8 +189,11 @@ class InputService:
             if self.logger.isEnabledFor(logging.DEBUG):
                 self.logger.debug("Mouse moved: dx=%s, dy=%s", dx, dy)
 
-        except Exception as e:
+        except (OSError, ctypes.ArgumentError) as e:
             self.logger.error("Mouse move failed (dx=%s, dy=%s): %s", dx, dy, e)
+        except Exception as e:
+            self.logger.critical("Unexpected error in mouse_move: %s", e, exc_info=True)
+            raise
 
     def mouse_click(self, button: str = "LEFT") -> None:
         """Simulate mouse click."""

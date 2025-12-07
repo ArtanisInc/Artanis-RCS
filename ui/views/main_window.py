@@ -240,6 +240,7 @@ class MainWindow(QMainWindow):
     """Main application window."""
     gsi_status_update_signal = Signal()
     status_update_signal = Signal(dict)
+    exit_requested_signal = Signal()  # Signal for exit hotkey
 
     def __init__(
             self,
@@ -272,6 +273,9 @@ class MainWindow(QMainWindow):
 
         # Connect signal for thread-safe status updates
         self.status_update_signal.connect(self._update_status)
+
+        # Connect exit signal
+        self.exit_requested_signal.connect(self._handle_exit_request)
 
         # Register status callback with recoil service
         self.recoil_service.register_status_changed_callback(
@@ -889,6 +893,11 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             self.logger.error("Weapon selection error: %s", e)
+
+    @Slot()
+    def _handle_exit_request(self):
+        """Handle exit request from hotkey (thread-safe via signal)."""
+        self.close()
 
     def closeEvent(self, a0: Optional[QCloseEvent]):
         """Handle window close event with comprehensive cleanup."""
