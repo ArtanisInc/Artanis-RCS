@@ -434,8 +434,7 @@ class MainWindow(QMainWindow):
             if success:
                 self.control_panel.start_button.setEnabled(False)
                 self.control_panel.stop_button.setEnabled(True)
-                self.logger.debug(
-                    f"Compensation started for weapon: {weapon_name}")
+                self.logger.debug(f"Compensation started for weapon: {weapon_name}")
             else:
                 QMessageBox.warning(
                     self, "Warning", "Failed to start compensation")
@@ -854,10 +853,10 @@ class MainWindow(QMainWindow):
                     self.logger.error("Failed to start compensation")
 
             action_text = "started" if self.recoil_service.active else "stopped"
-            self.logger.debug("Compensation %s via hotkey", action_text)
+            self.logger.debug(f"Compensation {action_text} via hotkey")
 
         except Exception as e:
-            self.logger.error("Toggle compensation error: %s", e)
+            self.logger.error(f"Toggle compensation error: {e}")
 
 
 
@@ -889,10 +888,10 @@ class MainWindow(QMainWindow):
                     if tts_service is not None:
                         tts_service.speak(clean_name)
 
-            self.logger.debug("Weapon selected via hotkey: %s", weapon_name)
+            self.logger.debug(f"Weapon selected via hotkey: {weapon_name}")
 
         except Exception as e:
-            self.logger.error("Weapon selection error: %s", e)
+            self.logger.error(f"Weapon selection error: {e}")
 
     @Slot()
     def _handle_exit_request(self):

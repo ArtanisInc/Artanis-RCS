@@ -168,7 +168,7 @@ class InputService:
             self.user32.SendInput.restype = wintypes.UINT
             self.logger.debug("Windows API initialized")
         except Exception as e:
-            self.logger.error("API initialization failed: %s", e)
+            self.logger.error(f"API initialization failed: {e}")
             raise
 
     def mouse_move(self, dx: int, dy: int) -> None:
@@ -187,12 +187,12 @@ class InputService:
                 1, ctypes.byref(input_obj), ctypes.sizeof(INPUT))
 
             if self.logger.isEnabledFor(logging.DEBUG):
-                self.logger.debug("Mouse moved: dx=%s, dy=%s", dx, dy)
+                self.logger.debug(f"Mouse moved: dx={dx}, dy={dy}")
 
         except (OSError, ctypes.ArgumentError) as e:
-            self.logger.error("Mouse move failed (dx=%s, dy=%s): %s", dx, dy, e)
+            self.logger.error(f"Mouse move failed (dx={dx}, dy={dy}): {e}")
         except Exception as e:
-            self.logger.critical("Unexpected error in mouse_move: %s", e, exc_info=True)
+            self.logger.critical(f"Unexpected error in mouse_move: {e}", exc_info=True)
             raise
 
     def mouse_click(self, button: str = "LEFT") -> None:
@@ -210,7 +210,7 @@ class InputService:
         }
 
         if button not in button_flags:
-            self.logger.warning("Unsupported mouse button: %s", button)
+            self.logger.warning(f"Unsupported mouse button: {button}")
             return
 
         down_flag, up_flag = button_flags[button]
@@ -233,10 +233,10 @@ class InputService:
             )
 
             self.user32.SendInput(2, inputs, ctypes.sizeof(INPUT))
-            self.logger.debug("Mouse clicked: %s", button)
+            self.logger.debug(f"Mouse clicked: {button}")
 
         except Exception as e:
-            self.logger.error("Mouse click failed (%s): %s", button, e)
+            self.logger.error(f"Mouse click failed ({button}): {e}")
 
     def key_down(self, vk_code: int) -> None:
         """Press key down."""
@@ -251,9 +251,9 @@ class InputService:
             )
             self.user32.SendInput(
                 1, ctypes.byref(input_obj), ctypes.sizeof(INPUT))
-            self.logger.debug("Key pressed: VK_%s", vk_code)
+            self.logger.debug(f"Key pressed: VK_{vk_code}")
         except Exception as e:
-            self.logger.error("Key down failed (VK_%s): %s", vk_code, e)
+            self.logger.error(f"Key down failed (VK_{vk_code}): {e}")
 
     def key_up(self, vk_code: int) -> None:
         """Release key."""
@@ -268,9 +268,9 @@ class InputService:
             )
             self.user32.SendInput(
                 1, ctypes.byref(input_obj), ctypes.sizeof(INPUT))
-            self.logger.debug("Key released: VK_%s", vk_code)
+            self.logger.debug(f"Key released: VK_{vk_code}")
         except Exception as e:
-            self.logger.error("Key up failed (VK_%s): %s", vk_code, e)
+            self.logger.error(f"Key up failed (VK_{vk_code}): {e}")
 
     def key_press(self, vk_code: int, delay: float = 0.05) -> None:
         """Press and release key with delay."""
@@ -288,12 +288,12 @@ class InputService:
             if self._last_key_states.get(vk_code) != is_pressed:
                 if self.logger.isEnabledFor(logging.DEBUG):
                     status = "pressed" if is_pressed else "released"
-                    self.logger.debug("Key VK_%s: %s", vk_code, status)
+                    self.logger.debug(f"Key VK_{vk_code}: {status}")
                 self._last_key_states[vk_code] = is_pressed
 
             return is_pressed
         except Exception as e:
-            self.logger.error("Key state check failed (VK_%s): %s", vk_code, e)
+            self.logger.error(f"Key state check failed (VK_{vk_code}): {e}")
             return False
 
     def get_key_code(self, key_name: str) -> Optional[int]:

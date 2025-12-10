@@ -191,7 +191,7 @@ class AutoAcceptService(QObject):
 
             # Calculate Accept button position
             button_x, button_y = self.screen_capture.calculate_accept_button_position(window_info)
-            self.logger.debug("Accept button position calculated: ({}, {}) for window {}".format(button_x, button_y, window_info))
+            self.logger.debug(f"Accept button position calculated: ({button_x}, {button_y}) for window {window_info}")
 
             # Monitor for Accept button and click when found
             accept_clicked = False

@@ -64,44 +64,36 @@ class RecoilService:
 
     def set_weapon(self, weapon_name: Optional[str]) -> bool:
         """Set current weapon for compensation with conditional TTS notification."""
-        # Determine actions to take while holding lock
         with self.weapon_lock:
-            if not weapon_name:
-                weapon_changed = self.current_weapon is not None
-                needs_stop = self.active
+            # 1. Validate new weapon if provided
+            if weapon_name and weapon_name not in self.config_service.weapon_profiles:
+                self.logger.warning(f"Weapon not found: {weapon_name}")
+                return False
 
-                # Update state first
-                self.current_weapon = None
-                self.logger.info("Current weapon: None")
-            else:
-                if weapon_name not in self.config_service.weapon_profiles:
-                    self.logger.warning(f"Weapon not found: {weapon_name}")
-                    return False
+            # 2. Check if weapon is actually changing
+            if self.current_weapon == weapon_name:
+                self.logger.debug(f"Weapon reconfirmed: {weapon_name}")
+                return True  # No change, operation is successful
 
-                weapon_changed = self.current_weapon != weapon_name
-                needs_stop = False
-                self.current_weapon = weapon_name
+            # 3. Weapon is changing, update state and determine side-effects
+            self.current_weapon = weapon_name
+            self.logger.info(f"Current weapon: {self.current_weapon}")
 
-                if weapon_changed:
-                    self.logger.info(f"Current weapon: {weapon_name}")
-                else:
-                    self.logger.debug(f"Weapon reconfirmed: {weapon_name}")
+            needs_stop = self.active and not self.current_weapon
+            needs_signal = self.active and self.current_weapon is not None
 
-                if weapon_changed and self.active:
-                    self.weapon_change_event.set()
-                    self.logger.debug(
-                        "Weapon change signal sent to compensation thread")
+            if needs_signal:
+                self.weapon_change_event.set()
+                self.logger.debug("Weapon change signal sent to compensation thread")
 
         # Perform blocking operations outside the lock
         if needs_stop:
             self.logger.debug("Stopping active compensation before weapon deselection")
-            success = self.stop_compensation()
-            if not success:
+            if not self.stop_compensation():
                 self.logger.warning("Failed to stop compensation during weapon deselection")
 
-        # Notify observers if weapon changed
-        if weapon_changed:
-            self._notify_status_changed()
+        # Notify observers of the change
+        self._notify_status_changed()
 
         return True
 
@@ -349,7 +341,7 @@ class RecoilService:
             scale_x = random.gauss(1.0, sigma)
             scale_y = random.gauss(1.0, sigma)
             
-            self.logger.debug("Spray variation: scale_x=%.3f, scale_y=%.3f", scale_x, scale_y)
+            self.logger.debug(f"Spray variation: scale_x={scale_x:.3f}, scale_y={scale_y:.3f}")
 
         for i, point in enumerate(pattern):
             if self.weapon_change_event.is_set():

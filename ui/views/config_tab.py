@@ -501,8 +501,31 @@ class ConfigTab(QWidget):
             self._load_features_settings()
             self._load_hotkeys()
         except Exception as e:
-            self.logger.error("Data loading failed: %s", e)
+            self.logger.error(f"Data loading failed: {e}")
             QMessageBox.warning(self, "Warning", f"Data loading error: {e}")
+
+    def _populate_weapon_combos(self, combos: List[QComboBox]):
+        """Populate a list of combo boxes with weapons from the config service."""
+        # Get weapon data, sorted for consistent ordering
+        weapon_items = []
+        for name in sorted(self.config_service.weapon_profiles.keys()):
+            display_name = self.config_service.get_weapon_display_name(name)
+            display_name_str = str(display_name) if display_name else name
+            weapon_items.append((display_name_str, str(name)))
+
+        # Populate combos
+        for combo in combos:
+            current_data = combo.currentData()
+            combo.clear()
+            combo.addItem("Select a weapon...", userData="")
+            for display, data in weapon_items:
+                combo.addItem(display, userData=data)
+
+            # Restore selection if possible
+            if current_data:
+                index = combo.findData(current_data)
+                if index >= 0:
+                    combo.setCurrentIndex(index)
 
     def _load_global_settings(self):
         """Load global settings."""
@@ -511,26 +534,10 @@ class ConfigTab(QWidget):
 
     def _load_weapons(self):
         """Load weapons into combo boxes."""
-        current_weapon = self.active_weapon_section.weapon_combo.currentData()
-
-        self.active_weapon_section.weapon_combo.clear()
-        self.hotkeys_section.weapon_hotkey_combo.clear()
-
-        self.active_weapon_section.weapon_combo.addItem("Select a weapon...", userData="")
-        self.hotkeys_section.weapon_hotkey_combo.addItem("Select a weapon...", userData="")
-
-        for name in self.config_service.weapon_profiles.keys():
-            display_name = self.config_service.get_weapon_display_name(name)
-            display_name_str = str(display_name) if display_name is not None else ""
-            name_str = str(name) if name is not None else ""
-            self.active_weapon_section.weapon_combo.addItem(display_name_str, userData=name_str)
-            self.hotkeys_section.weapon_hotkey_combo.addItem(display_name_str, userData=name_str)
-
-        # Restore selection
-        if current_weapon:
-            index = self.active_weapon_section.weapon_combo.findData(current_weapon)
-            if index >= 0:
-                self.active_weapon_section.weapon_combo.setCurrentIndex(index)
+        self._populate_weapon_combos([
+            self.active_weapon_section.weapon_combo,
+            self.hotkeys_section.weapon_hotkey_combo
+        ])
 
         # Load weapon parameters if a weapon is selected
         current_index = self.active_weapon_section.weapon_combo.currentIndex()
@@ -596,7 +603,7 @@ class ConfigTab(QWidget):
 
         weapon = self.config_service.get_weapon_profile(weapon_name)
         if not weapon:
-            self.logger.warning("Weapon profile not found: %s", weapon_name)
+            self.logger.warning(f"Weapon profile not found: {weapon_name}")
             return
 
         self.weapon_parameters_section.multiple_spin.setValue(weapon.multiple)
@@ -650,7 +657,7 @@ class ConfigTab(QWidget):
                 self, "Success", f"Key {key_text} assigned to {weapon_display}")
 
         except Exception as e:
-            self.logger.error("Key assignment failed: %s", e)
+            self.logger.error(f"Key assignment failed: {e}")
             QMessageBox.critical(self, "Error", f"Assignment error: {e}")
 
     def _remove_weapon_key(self):
@@ -674,7 +681,7 @@ class ConfigTab(QWidget):
                                         "No key assigned to this weapon")
 
         except Exception as e:
-            self.logger.error("Key removal failed: %s", e)
+            self.logger.error(f"Key removal failed: {e}")
             QMessageBox.critical(self, "Error", f"Removal error: {e}")
 
     def _validate_hotkeys_conflicts(self) -> Tuple[bool, List[str]]:
@@ -719,7 +726,7 @@ class ConfigTab(QWidget):
             return len(conflicts) == 0, conflicts
 
         except Exception as e:
-            self.logger.error("Hotkey validation failed: %s", e)
+            self.logger.error(f"Hotkey validation failed: {e}")
             return False, [f"Validation error: {e}"]
 
     def _save_weapon_config(self):
@@ -778,7 +785,7 @@ class ConfigTab(QWidget):
                 QMessageBox.warning(self, "Warning", "Configuration save failed")
 
         except Exception as e:
-            self.logger.error("Configuration save failed: %s", e)
+            self.logger.error(f"Configuration save failed: {e}")
             QMessageBox.critical(self, "Error", f"Save error: {e}")
 
     def _on_color_button_clicked(self):
@@ -824,7 +831,7 @@ class ConfigTab(QWidget):
                 self.logger.warning("Failed to save Follow RCS configuration")
 
         except Exception as e:
-            self.logger.error("Follow RCS config save failed: %s", e)
+            self.logger.error(f"Follow RCS config save failed: {e}")
 
     def _save_features_config(self):
         """Save features configuration."""
@@ -847,7 +854,7 @@ class ConfigTab(QWidget):
                 self.logger.warning("Failed to save features configuration")
 
         except Exception as e:
-            self.logger.error("Features config save failed: %s", e)
+            self.logger.error(f"Features config save failed: {e}")
 
     def _save_hotkeys_config(self):
         """Save hotkeys configuration with conflict validation."""
@@ -891,7 +898,7 @@ class ConfigTab(QWidget):
                 QMessageBox.warning(self, "Warning", "Save failed")
 
         except Exception as e:
-            self.logger.error("Hotkeys save failed: %s", e)
+            self.logger.error(f"Hotkeys save failed: {e}")
             QMessageBox.critical(self, "Error", f"Save error: {e}")
 
     def get_selected_weapon(self) -> str:
@@ -914,4 +921,4 @@ class ConfigTab(QWidget):
                     "Select the active weapon for recoil compensation")
 
         except Exception as e:
-            self.logger.error("Weapon controls state update error: %s", e)
+            self.logger.error(f"Weapon controls state update error: {e}")

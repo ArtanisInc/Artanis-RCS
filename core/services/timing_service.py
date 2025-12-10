@@ -35,9 +35,7 @@ class WindowsTimer:
         self.correction_factor = min(
             0.1, self.timing_overhead_ns / 1000000)  # Max 0.1ms
 
-        self.logger.debug(
-            "Windows timer initialized (freq: %s Hz, overhead: %.0fns)",
-            self.freq_value, self.timing_overhead_ns)
+        self.logger.debug(f"Windows timer initialized (freq: {self.freq_value} Hz, overhead: {self.timing_overhead_ns:.0f}ns)")
 
     def _calibrate_timing_overhead(self) -> float:
         """Calibrate timing overhead for compensation."""
@@ -168,11 +166,9 @@ class TimingService:
         try:
             self.timer = WindowsTimer()
             self.precision_sleep = PrecisionSleep(self.timer)
-            self.logger.debug(
-                "Timing service initialized with %s strategy",
-                strategy.value)
+            self.logger.debug(f"Timing service initialized with {strategy.value} strategy")
         except Exception as e:
-            self.logger.error("Timing service initialization failed: %s", e)
+            self.logger.error(f"Timing service initialization failed: {e}")
             # Fallback to standard timing
             self.timer = None
             self.precision_sleep = None

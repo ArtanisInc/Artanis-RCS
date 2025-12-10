@@ -76,7 +76,7 @@ class BombTimerService(QObject):
                 self.bomb_defused_signal.emit()
 
         except Exception as e:
-            self.logger.error("Error processing player state: %s", e)
+            self.logger.error(f"Error processing player state: {e}")
 
     def _start_bomb_timer(self) -> None:
         """Start the bomb countdown timer - called in main thread via signal."""
@@ -133,7 +133,7 @@ class BombTimerService(QObject):
             self.timer_update_signal.emit(remaining_time, self.has_defuse_kit, can_defuse)
 
         except Exception as e:
-            self.logger.error("Qt Timer update error: %s", e)
+            self.logger.error(f"Qt Timer update error: {e}")
 
     def _emit_callback(self, remaining_time: float, has_kit: bool, can_defuse: bool) -> None:
         """Emit callback - called in main thread via signal."""

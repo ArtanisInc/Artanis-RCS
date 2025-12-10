@@ -250,7 +250,7 @@ class PatternVisualizer(FigureCanvasQTAgg):
             self.fig.tight_layout()
             self.draw()
         except Exception as e:
-            self.logger.error("Failed to clear pattern: %s", e)
+            self.logger.error(f"Failed to clear pattern: {e}")
             # Last resort - just clear data
             self.pattern_data = []
 
@@ -323,10 +323,10 @@ class PatternVisualizer(FigureCanvasQTAgg):
             self.fig.tight_layout()
             self.draw()
 
-            self.logger.debug("Pattern redrawn (%s points)", len(self.pattern_data))
+            self.logger.debug(f"Pattern redrawn ({len(self.pattern_data)} points)")
 
         except Exception as e:
-            self.logger.error("Pattern redraw failed: %s", e)
+            self.logger.error(f"Pattern redraw failed: {e}")
             # Try to recover by clearing and redrawing empty
             try:
                 self.clear_pattern()
@@ -370,9 +370,9 @@ class PatternVisualizer(FigureCanvasQTAgg):
             export_params.update(kwargs)
 
             self.fig.savefig(filename, format=format, **export_params)
-            self.logger.info("Figure exported: %s", filename)
+            self.logger.info(f"Figure exported: {filename}")
             return True
 
         except Exception as e:
-            self.logger.error("Figure export failed: %s", e)
+            self.logger.error(f"Figure export failed: {e}")
             return False

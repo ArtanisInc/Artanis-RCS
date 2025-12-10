@@ -63,7 +63,7 @@ class CallbackManager:
             callback: Callable) -> None:
         """Register callback for system action."""
         self.action_callbacks[action] = callback
-        self.logger.debug("Action callback registered: %s", action.value)
+        self.logger.debug(f"Action callback registered: {action.value}")
 
     def register_weapon_callback(
             self, callback: Callable[[str], None]) -> None:
@@ -79,14 +79,10 @@ class CallbackManager:
                 callback()
                 return True
             else:
-                self.logger.warning(
-                    "No callback registered for action: %s",
-                    action.value)
+                self.logger.warning(f"No callback registered for action: {action.value}")
                 return False
         except Exception as e:
-            self.logger.error(
-                "Action callback failed for %s: %s",
-                action.value, e)
+            self.logger.error(f"Action callback failed for {action.value}: {e}")
             return False
 
     def trigger_weapon_selection(self, weapon_name: str) -> bool:
@@ -96,11 +92,10 @@ class CallbackManager:
                 self.weapon_callback(weapon_name)
                 return True
             else:
-                self.logger.warning(
-                    "No weapon callback registered for: %s", weapon_name)
+                self.logger.warning(f"No weapon callback registered for: {weapon_name}")
                 return False
         except Exception as e:
-            self.logger.error("Weapon callback failed for %s: %s", weapon_name, e)
+            self.logger.error(f"Weapon callback failed for {weapon_name}: {e}")
             return False
 
 
@@ -157,11 +152,10 @@ class HotkeyService:
                             self.weapon_hotkeys[weapon_name] = key_name
                             self.hotkey_mappings[weapon_name] = vk_code
 
-                self.logger.debug(
-                    "Hotkey mappings updated: %s active", len(self.hotkey_mappings))
+                self.logger.debug(f"Hotkey mappings updated: {len(self.hotkey_mappings)} active")
 
             except Exception as e:
-                self.logger.error("Failed to update hotkey mappings: %s", e)
+                self.logger.error(f"Failed to update hotkey mappings: {e}")
 
     def register_action_callback(
             self,
@@ -197,7 +191,7 @@ class HotkeyService:
             return True
 
         except Exception as e:
-            self.logger.error("Failed to start hotkey monitoring: %s", e)
+            self.logger.error(f"Failed to start hotkey monitoring: {e}")
             return False
 
     def stop_monitoring(self) -> bool:
@@ -216,7 +210,7 @@ class HotkeyService:
             return True
 
         except Exception as e:
-            self.logger.error("Failed to stop hotkey monitoring: %s", e)
+            self.logger.error(f"Failed to stop hotkey monitoring: {e}")
             return False
 
     def _monitoring_loop(self) -> None:
@@ -236,7 +230,7 @@ class HotkeyService:
                 time.sleep(0.01)  # 10ms polling rate
 
             except Exception as e:
-                self.logger.error("Monitoring loop error: %s", e)
+                self.logger.error(f"Monitoring loop error: {e}")
                 time.sleep(0.1)  # Longer pause on error
 
         self.logger.debug("Hotkey monitoring loop terminated")
@@ -250,7 +244,7 @@ class HotkeyService:
     def _handle_hotkey_trigger(self, identifier: str) -> None:
         """Handle hotkey trigger event."""
         try:
-            self.logger.debug("Hotkey triggered: %s", identifier)
+            self.logger.debug(f"Hotkey triggered: {identifier}")
 
             # System actions
             if identifier == "toggle_recoil":
@@ -267,11 +261,10 @@ class HotkeyService:
                 self.callback_manager.trigger_weapon_selection(identifier)
 
             else:
-                self.logger.warning("Unknown hotkey identifier: %s", identifier)
+                self.logger.warning(f"Unknown hotkey identifier: {identifier}")
 
         except Exception as e:
-            self.logger.error(
-                "Hotkey trigger handling failed for %s: %s", identifier, e)
+            self.logger.error(f"Hotkey trigger handling failed for {identifier}: {e}")
 
     def reload_configuration(self) -> None:
         """Reload hotkey configuration."""
@@ -289,4 +282,4 @@ class HotkeyService:
             self.logger.info("Hotkey configuration reloaded")
 
         except Exception as e:
-            self.logger.error("Configuration reload failed: %s", e)
+            self.logger.error(f"Configuration reload failed: {e}")

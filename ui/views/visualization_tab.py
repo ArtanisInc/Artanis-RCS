@@ -229,23 +229,23 @@ class VisualizationTab(QWidget):
         try:
             weapon = self.config_service.get_weapon_profile(weapon_name)
             if not weapon:
-                self.logger.warning("Weapon profile not found: %s", weapon_name)
+                self.logger.warning(f"Weapon profile not found: {weapon_name}")
                 self._clear_visualization()
                 return
 
             if hasattr(weapon, 'recoil_pattern') and weapon.recoil_pattern:
                 self.pattern_visualizer.set_pattern(weapon.recoil_pattern)
             else:
-                self.logger.warning("No recoil pattern for weapon: %s", weapon_name)
+                self.logger.warning(f"No recoil pattern for weapon: {weapon_name}")
                 self._clear_visualization()
                 return
 
             self.current_weapon = weapon_name
 
-            self.logger.debug("Visualization updated: %s", weapon_name)
+            self.logger.debug(f"Visualization updated: {weapon_name}")
 
         except Exception as e:
-            self.logger.error("Visualization update failed: %s", e)
+            self.logger.error(f"Visualization update failed: {e}")
             # Don't show popup for rapid switching errors - just log them
             if "bbox" not in str(e):
                 QMessageBox.warning(self, "Warning", f"Visualization error: {e}")
@@ -264,7 +264,7 @@ class VisualizationTab(QWidget):
             self.pattern_visualizer.clear_pattern()
             self.current_weapon = None
         except Exception as e:
-            self.logger.error("Failed to clear visualization: %s", e)
+            self.logger.error(f"Failed to clear visualization: {e}")
 
     def _on_style_changed(self, index):
         """
@@ -286,7 +286,7 @@ class VisualizationTab(QWidget):
                 line_color=colors[0]
             )
         except Exception as e:
-            self.logger.error("Failed to change style: %s", e)
+            self.logger.error(f"Failed to change style: {e}")
 
     def _export_figure(self):
         """Export the visualization figure to file."""
@@ -327,13 +327,13 @@ class VisualizationTab(QWidget):
             if success:
                 QMessageBox.information(
                     self, "Success", f"Figure exported: {filename}")
-                self.logger.info("Figure exported successfully: %s", filename)
+                self.logger.info(f"Figure exported successfully: {filename}")
             else:
                 QMessageBox.warning(self, "Warning", "Export failed")
-                self.logger.warning("Figure export failed: %s", filename)
+                self.logger.warning(f"Figure export failed: {filename}")
 
         except Exception as e:
-            self.logger.error("Figure export error: %s", e)
+            self.logger.error(f"Figure export error: {e}")
             QMessageBox.critical(self, "Error", f"Export error: {e}")
 
     def get_visualization_info(self) -> dict:
@@ -375,7 +375,7 @@ class VisualizationTab(QWidget):
             self.logger.debug("Visualization settings applied")
 
         except Exception as e:
-            self.logger.error("Failed to apply visualization settings: %s", e)
+            self.logger.error(f"Failed to apply visualization settings: {e}")
 
     def reset_view(self):
         """Reset visualization to default view."""
@@ -394,7 +394,7 @@ class VisualizationTab(QWidget):
             self.logger.debug("Visualization view reset")
 
         except Exception as e:
-            self.logger.error("Failed to reset view: %s", e)
+            self.logger.error(f"Failed to reset view: {e}")
 
     def get_export_formats(self) -> List[str]:
         """Get list of supported export formats."""
@@ -420,12 +420,12 @@ class VisualizationTab(QWidget):
             )
 
             if success:
-                self.logger.info("Figure exported with settings: %s", filename)
+                self.logger.info(f"Figure exported with settings: {filename}")
             else:
-                self.logger.warning("Export failed: %s", filename)
+                self.logger.warning(f"Export failed: {filename}")
 
             return success
 
         except Exception as e:
-            self.logger.error("Export with settings failed: %s", e)
+            self.logger.error(f"Export with settings failed: {e}")
             return False

@@ -38,7 +38,7 @@ class GSIConfigService:
             config_file_path = cs2_config_path / self.config_filename
 
             if config_file_path.exists():
-                self.logger.debug("GSI config file already exists: %s", config_file_path)
+                self.logger.debug(f"GSI config file already exists: {config_file_path}")
                 return True
 
             config_content = self._generate_config_content(gsi_config)
@@ -46,11 +46,11 @@ class GSIConfigService:
             with open(config_file_path, 'w', encoding='utf-8') as f:
                 f.write(config_content)
 
-            self.logger.info("GSI config file created: %s", config_file_path)
+            self.logger.info(f"GSI config file created: {config_file_path}")
             return True
 
         except Exception as e:
-            self.logger.error("Failed to generate GSI config file: %s", e)
+            self.logger.error(f"Failed to generate GSI config file: {e}")
             return False
 
     def _find_cs2_config_directory(self) -> Optional[Path]:
@@ -65,13 +65,13 @@ class GSIConfigService:
                 cs2_config_path = steam_path / "steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg"
 
                 if cs2_config_path.exists():
-                    self.logger.debug("Found CS2 config directory: %s", cs2_config_path)
+                    self.logger.debug(f"Found CS2 config directory: {cs2_config_path}")
                     return cs2_config_path
 
             return None
 
         except Exception as e:
-            self.logger.error("Error finding CS2 config directory: %s", e)
+            self.logger.error(f"Error finding CS2 config directory: {e}")
             return None
 
     def _get_steam_paths(self) -> list[Path]:
@@ -103,7 +103,7 @@ class GSIConfigService:
                 if lib_path not in steam_paths:
                     steam_paths.append(lib_path)
 
-        self.logger.debug("Found Steam paths: %s", [str(p) for p in steam_paths])
+        self.logger.debug(f"Found Steam paths: {[str(p) for p in steam_paths]}")
         return steam_paths
 
     def _parse_libraryfolders_vdf(self, steam_path: Path) -> list[Path]:
@@ -114,7 +114,7 @@ class GSIConfigService:
             vdf_path = steam_path / "config" / "libraryfolders.vdf"
 
             if not vdf_path.exists():
-                self.logger.debug("libraryfolders.vdf not found at %s", vdf_path)
+                self.logger.debug(f"libraryfolders.vdf not found at {vdf_path}")
                 return library_paths
 
             with open(vdf_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -128,12 +128,12 @@ class GSIConfigService:
 
                 if library_path.exists():
                     library_paths.append(library_path)
-                    self.logger.debug("Found Steam library: %s", library_path)
+                    self.logger.debug(f"Found Steam library: {library_path}")
                 else:
-                    self.logger.debug("Steam library path does not exist: %s", library_path)
+                    self.logger.debug(f"Steam library path does not exist: {library_path}")
 
         except Exception as e:
-            self.logger.warning("Error parsing libraryfolders.vdf: %s", e)
+            self.logger.warning(f"Error parsing libraryfolders.vdf: {e}")
 
         return library_paths
 
@@ -181,7 +181,7 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
             try:
                 gsi_data = json.loads(raw_data.decode('utf-8'))
             except json.JSONDecodeError as e:
-                self.gsi_service.logger.error("JSON decode error: %s", e)
+                self.gsi_service.logger.error(f"JSON decode error: {e}")
                 self.send_response(400)
                 self.end_headers()
                 return
@@ -194,7 +194,7 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(b'OK')
 
         except Exception as e:
-            self.gsi_service.logger.error("Request handling error: %s", e)
+            self.gsi_service.logger.error(f"Request handling error: {e}")
             self.send_response(500)
             self.end_headers()
 
@@ -246,7 +246,7 @@ class GSIService:
                 self.logger.warning("GSI configuration file could not be generated automatically")
                 config_status = "generation failed"
 
-        self.logger.info("GSI Service ready: config %s, server on %s:%s", config_status, host, port)
+        self.logger.info(f"GSI Service ready: config {config_status}, server on {host}:{port}")
 
     def start_server(self) -> bool:
         """Start the GSI HTTP server."""
@@ -269,11 +269,11 @@ class GSIService:
             self.is_running = True
             self.connection_status = "Listening"
 
-            self.logger.debug("GSI server started on %s:%s", self.host, self.port)
+            self.logger.debug(f"GSI server started on {self.host}:{self.port}")
             return True
 
         except Exception as e:
-            self.logger.error("Failed to start GSI server: %s", e)
+            self.logger.error(f"Failed to start GSI server: {e}")
             self.connection_status = "Error"
             return False
 
@@ -299,7 +299,7 @@ class GSIService:
             return True
 
         except Exception as e:
-            self.logger.error("Error stopping GSI server: %s", e)
+            self.logger.error(f"Error stopping GSI server: {e}")
             return False
 
     def _run_server(self):
@@ -311,7 +311,7 @@ class GSIService:
             self.server.serve_forever()
         except Exception as e:
             if self.is_running:
-                self.logger.error("Server error: %s", e)
+                self.logger.error(f"Server error: {e}")
         finally:
             self.is_running = False
             self.connection_status = "Disconnected"
@@ -331,7 +331,7 @@ class GSIService:
             self._executor.submit(self._process_gsi_data, gsi_data)
 
         except Exception as e:
-            self.logger.error("GSI data submission error: %s", e)
+            self.logger.error(f"GSI data submission error: {e}")
 
     def _process_gsi_data(self, gsi_data: Dict[str, Any]) -> None:
         """Process incoming GSI data with change detection."""
@@ -355,7 +355,7 @@ class GSIService:
                         self.current_player_state.timestamp = player_state.timestamp
 
         except Exception as e:
-            self.logger.error("GSI data processing error: %s", e)
+            self.logger.error(f"GSI data processing error: {e}")
 
     def _extract_tracked_fields(self, player_state: PlayerState) -> Dict[str, Any]:
         """Extract fields we want to track for changes."""
@@ -387,14 +387,14 @@ class GSIService:
             try:
                 self._executor.submit(self._safe_callback_execution, callback_name, callback, player_state)
             except Exception as e:
-                self.logger.error("Callback submission error for '%s': %s", callback_name, e)
+                self.logger.error(f"Callback submission error for '{callback_name}': {e}")
 
     def _safe_callback_execution(self, callback_name: str, callback: Callable, player_state: PlayerState) -> None:
         """Safely execute a callback with error handling."""
         try:
             callback(player_state)
         except Exception as e:
-            self.logger.error("Callback '%s' execution error: %s", callback_name, e)
+            self.logger.error(f"Callback '{callback_name}' execution error: {e}")
 
     def _extract_player_state(
             self, gsi_data: Dict[str, Any]) -> Optional[PlayerState]:
@@ -433,7 +433,7 @@ class GSIService:
             )
 
         except Exception as e:
-            self.logger.error("Player state extraction error: %s", e)
+            self.logger.error(f"Player state extraction error: {e}")
             return None
 
     def _extract_weapons(self, weapons_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -456,8 +456,7 @@ class GSIService:
                 weapons[slot] = weapon
 
             except Exception as e:
-                self.logger.warning(
-                    "Weapon extraction error for slot %s: %s", slot, e)
+                self.logger.warning(f"Weapon extraction error for slot {slot}: {e}")
                 continue
 
         return weapons
@@ -467,14 +466,14 @@ class GSIService:
         """Register callback for GSI updates."""
         with self.lock:
             self.update_callbacks[name] = callback
-            self.logger.debug("Callback registered: %s", name)
+            self.logger.debug(f"Callback registered: {name}")
 
     def unregister_callback(self, name: str) -> None:
         """Unregister GSI update callback."""
         with self.lock:
             if name in self.update_callbacks:
                 del self.update_callbacks[name]
-                self.logger.debug("Callback unregistered: %s", name)
+                self.logger.debug(f"Callback unregistered: {name}")
 
     def get_connection_status(self) -> Dict[str, Any]:
         """Get connection status information"""

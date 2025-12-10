@@ -81,8 +81,7 @@ class WeaponDetectionService:
 
             # This ensures clean state until GSI provides weapon data
             if self.recoil_service.current_weapon:
-                self.logger.debug("Clearing manually set weapon: %s",
-                                self.recoil_service.current_weapon)
+                self.logger.debug(f"Clearing manually set weapon: {self.recoil_service.current_weapon}")
                 self.recoil_service.current_weapon = None
 
             # Always notify status change when detection state changes
@@ -93,7 +92,7 @@ class WeaponDetectionService:
             return True
 
         except Exception as e:
-            self.logger.error("Failed to enable weapon detection: %s", e)
+            self.logger.error(f"Failed to enable weapon detection: {e}")
             return False
 
     def disable(self) -> bool:
@@ -119,7 +118,7 @@ class WeaponDetectionService:
             return True
 
         except Exception as e:
-            self.logger.error("Failed to disable weapon detection: %s", e)
+            self.logger.error(f"Failed to disable weapon detection: {e}")
             return False
 
     def toggle_detection(self) -> bool:
@@ -144,42 +143,32 @@ class WeaponDetectionService:
             self._process_ammo_monitoring(player_state)
 
         except Exception as e:
-            self.logger.error("Player state processing error: %s", e)
+            self.logger.error(f"Player state processing error: {e}")
 
     def _process_weapon_changes(self, player_state: PlayerState) -> None:
         """Process weapon changes and update active weapon."""
-        target_weapon = None
+        target_weapon = (player_state.rcs_weapon_pattern
+                         if player_state.should_enable_rcs else None)
 
-        if player_state.should_enable_rcs:
-            pattern_name = player_state.rcs_weapon_pattern
-            if pattern_name:
-                target_weapon = pattern_name
-
-        weapon_changed = self.detection_state.update_weapon(target_weapon)
-
-        if weapon_changed:
+        if self.detection_state.update_weapon(target_weapon):
             self._handle_weapon_change(target_weapon)
 
     def _handle_weapon_change(self, new_weapon: Optional[str]) -> None:
         """Handle weapon change event with silent operation."""
-        try:
-            if new_weapon:
-                success = self.recoil_service.set_weapon(new_weapon)
-                if success:
-                    # Only log weapon switches, not reconfirmations
-                    if new_weapon != self.detection_state.previous_weapon:
-                        self.logger.debug("Auto-switched to weapon: %s", new_weapon)
-                    else:
-                        self.logger.debug("Weapon reconfirmed: %s", new_weapon)
+        if new_weapon:
+            success = self.recoil_service.set_weapon(new_weapon)
+            if success:
+                # Only log weapon switches, not reconfirmations
+                if new_weapon != self.detection_state.previous_weapon:
+                    self.logger.debug(f"Auto-switched to weapon: {new_weapon}")
                 else:
-                    self.logger.warning("Failed to switch to: %s (weapon not in profiles)", new_weapon)
+                    self.logger.debug(f"Weapon reconfirmed: {new_weapon}")
             else:
-                # Clear weapon when no valid weapon detected
-                self.recoil_service.set_weapon(None)
-                self.logger.debug("No valid RCS weapon detected - cleared weapon")
-
-        except Exception as e:
-            self.logger.error("Weapon change handling error: %s", e)
+                self.logger.warning(f"Failed to switch to: {new_weapon} (weapon not in profiles)")
+        else:
+            # Clear weapon when no valid weapon detected
+            self.recoil_service.set_weapon(None)
+            self.logger.debug("No valid RCS weapon detected - cleared weapon")
 
     def _process_rcs_control(self, player_state: PlayerState,
                              current_time: float) -> None:
@@ -188,27 +177,22 @@ class WeaponDetectionService:
         should_enable_rcs = player_state.should_enable_rcs
         rcs_currently_active = self.recoil_service.active
 
-        try:
-            if should_enable_rcs and not rcs_currently_active:
-                if self.recoil_service.current_weapon:
-                    success = self.recoil_service.start_compensation(
-                        allow_manual_when_auto_enabled=True)
-                    if success:
-                        self.detection_state.rcs_was_auto_enabled = True
-                        self.logger.debug("RCS auto-enabled by GSI detection")
-                else:
-                    self.logger.debug("Cannot start RCS: no weapon set in recoil service")
-
-            elif (not should_enable_rcs and rcs_currently_active and
-                  self.detection_state.rcs_was_auto_enabled):
-                success = self.recoil_service.stop_compensation()
+        if should_enable_rcs and not rcs_currently_active:
+            if self.recoil_service.current_weapon:
+                success = self.recoil_service.start_compensation(
+                    allow_manual_when_auto_enabled=True)
                 if success:
-                    self.detection_state.rcs_was_auto_enabled = False
-                    self.logger.debug("RCS auto-disabled")
+                    self.detection_state.rcs_was_auto_enabled = True
+                    self.logger.debug("RCS auto-enabled by GSI detection")
+            else:
+                self.logger.debug("Cannot start RCS: no weapon set in recoil service")
 
-        except Exception as e:
-            self.logger.error("RCS control error: %s", e)
-
+        elif (not should_enable_rcs and rcs_currently_active and
+                self.detection_state.rcs_was_auto_enabled):
+            success = self.recoil_service.stop_compensation()
+            if success:
+                self.detection_state.rcs_was_auto_enabled = False
+                self.logger.debug("RCS auto-disabled")
 
     def _process_ammo_monitoring(self, player_state: PlayerState) -> None:
         """Process ammunition monitoring with silent operation."""
@@ -230,23 +214,13 @@ class WeaponDetectionService:
 
     def _handle_low_ammo_warning(self, weapon: WeaponState) -> None:
         """Handle low ammunition warning silently."""
-        try:
-            self.logger.debug(
-                "Low ammo detected: %s (%s)",
-                weapon.name, weapon.ammo_clip)
-            # No TTS announcement to avoid interrupting gameplay
-
-        except Exception as e:
-            self.logger.error("Low ammo warning error: %s", e)
+        self.logger.debug(f"Low ammo detected: {weapon.name} ({weapon.ammo_clip})")
+        # No TTS announcement to avoid interrupting gameplay
 
     def _handle_empty_magazine(self, weapon: WeaponState) -> None:
         """Handle empty magazine detection silently."""
-        try:
-            self.logger.debug("Empty magazine detected: %s", weapon.name)
-            # No TTS announcement to avoid interrupting gameplay
-
-        except Exception as e:
-            self.logger.error("Empty magazine handling error: %s", e)
+        self.logger.debug(f"Empty magazine detected: {weapon.name}")
+        # No TTS announcement to avoid interrupting gameplay
 
     def configure(self, config: Dict[str, Any]) -> bool:
         """Update detection configuration."""
@@ -258,7 +232,7 @@ class WeaponDetectionService:
             return True
 
         except Exception as e:
-            self.logger.error("Configuration update failed: %s", e)
+            self.logger.error(f"Configuration update failed: {e}")
             return False
 
     def get_status(self) -> Dict[str, Any]:

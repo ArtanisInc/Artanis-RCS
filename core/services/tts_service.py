@@ -29,7 +29,7 @@ class TTSService:
         if self.enabled:
             self._initialize_sapi()
 
-        self.logger.debug("TTS service initialized (enabled: %s)", self.enabled)
+        self.logger.debug(f"TTS service initialized (enabled: {self.enabled})")
 
     def _initialize_sapi(self) -> bool:
         """Initialize SAPI instance."""
@@ -50,7 +50,7 @@ class TTSService:
             return True
 
         except Exception as e:
-            self.logger.error("SAPI initialization failed: %s", e)
+            self.logger.error(f"SAPI initialization failed: {e}")
             self.enabled = False
             return False
 
@@ -74,17 +74,15 @@ class TTSService:
                         "us",
                         "uk"]):
                     self.voice.Voice = voice_item
-                    self.logger.debug(
-                        "Selected English voice: %s",
-                        voice_item.GetDescription())
+                    self.logger.debug(f"Selected English voice: {voice_item.GetDescription()}")
                     return
 
             # Use default voice if no English voice found
             default_voice = self.voice.Voice.GetDescription()
-            self.logger.debug("Using default voice: %s", default_voice)
+            self.logger.debug(f"Using default voice: {default_voice}")
 
         except Exception as e:
-            self.logger.warning("Voice selection failed: %s", e)
+            self.logger.warning(f"Voice selection failed: {e}")
 
     @staticmethod
     def normalize_weapon_pronunciation(text: str) -> str:
@@ -124,11 +122,11 @@ class TTSService:
             # Use flag 3 (purge + async) - stops current speech, speaks new message without blocking
             self.voice.Speak(message, 3)
 
-            self.logger.debug("TTS spoke with purge: '%s'", message)
+            self.logger.debug(f"TTS spoke with purge: '{message}'")
             return True
 
         except Exception as e:
-            self.logger.error("Failed to speak message: %s", e)
+            self.logger.error(f"Failed to speak message: {e}")
             return False
 
     def clear_queue(self) -> None:
@@ -140,7 +138,7 @@ class TTSService:
             self.voice.Speak("", 3)  # Purge any current speech (async)
             self.logger.debug("Speech cleared")
         except Exception as e:
-            self.logger.error("Failed to clear speech: %s", e)
+            self.logger.error(f"Failed to clear speech: {e}")
 
     def set_voice_properties(
             self,
@@ -169,13 +167,11 @@ class TTSService:
             except Exception:
                 voice_name = "Default"
 
-            self.logger.info(
-                "TTS initialized: %s voice, Rate: %s, Volume: %s",
-                voice_name, self.voice_rate, self.voice_volume)
+            self.logger.info(f"TTS initialized: {voice_name} voice, Rate: {self.voice_rate}, Volume: {self.voice_volume}")
             return True
 
         except Exception as e:
-            self.logger.error("Failed to set voice properties: %s", e)
+            self.logger.error(f"Failed to set voice properties: {e}")
             return False
 
     def set_enabled(self, enabled: bool) -> bool:
@@ -203,7 +199,7 @@ class TTSService:
             return True
 
         except Exception as e:
-            self.logger.error("Failed to change TTS state: %s", e)
+            self.logger.error(f"Failed to change TTS state: {e}")
             return False
 
     def stop(self) -> None:
@@ -214,7 +210,7 @@ class TTSService:
                 try:
                     self.clear_queue()
                 except Exception as stop_error:
-                    self.logger.warning("Error stopping SAPI: %s", stop_error)
+                    self.logger.warning(f"Error stopping SAPI: {stop_error}")
                 finally:
                     self.voice = None
 
@@ -228,7 +224,7 @@ class TTSService:
             self.logger.debug("TTS service stopped")
 
         except Exception as e:
-            self.logger.error("Error stopping TTS service: %s", e)
+            self.logger.error(f"Error stopping TTS service: {e}")
 
     def is_enabled(self) -> bool:
         """Check if TTS service is enabled."""
