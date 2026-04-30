@@ -1,6 +1,7 @@
 """
 Auto Accept Service for automatically accepting CS2 matches.
 """
+
 import logging
 import time
 import threading
@@ -45,7 +46,9 @@ class AutoAcceptService(QObject):
         self.match_found_signal.connect(self._on_match_found_signal)
 
         # Register console log callback
-        self.console_monitor.register_callback('match_found', self._on_match_found_in_console)
+        self.console_monitor.register_callback(
+            "match_found", self._on_match_found_in_console
+        )
 
         self.logger.info("Auto Accept Service initialized")
 
@@ -71,9 +74,13 @@ class AutoAcceptService(QObject):
             result = self.console_monitor._find_cs2_console_log()
             self.logger.debug(f"Console log detection result: {result}")
             if result:
-                self.logger.debug(f"Console log path: {self.console_monitor.console_log_path}")
+                self.logger.debug(
+                    f"Console log path: {self.console_monitor.console_log_path}"
+                )
             else:
-                self.logger.warning("Failed to find console.log after GSI service setup")
+                self.logger.warning(
+                    "Failed to find console.log after GSI service setup"
+                )
 
         # Auto-start if enabled in configuration
         self._check_auto_start()
@@ -82,10 +89,14 @@ class AutoAcceptService(QObject):
         """Check if Auto Accept should be automatically started based on configuration."""
         try:
             if self.should_be_enabled() and not self.enabled:
-                self.logger.debug("Auto Accept enabled in config - starting automatically")
+                self.logger.debug(
+                    "Auto Accept enabled in config - starting automatically"
+                )
                 self.enable()
             elif not self.should_be_enabled() and self.enabled:
-                self.logger.debug("Auto Accept disabled in config - stopping automatically")
+                self.logger.debug(
+                    "Auto Accept disabled in config - stopping automatically"
+                )
                 self.disable()
         except Exception as e:
             self.logger.error(f"Error during auto-start check: {e}")
@@ -104,7 +115,6 @@ class AutoAcceptService(QObject):
 
             self.enabled = True
             self.status_update_signal.emit("Auto Accept enabled")
-
 
             self.logger.debug("Auto Accept service enabled")
             return True
@@ -130,7 +140,6 @@ class AutoAcceptService(QObject):
 
             self.status_update_signal.emit("Auto Accept disabled")
 
-
             self.logger.debug("Auto Accept service disabled")
             return True
 
@@ -155,14 +164,13 @@ class AutoAcceptService(QObject):
 
         # Start accept process in separate thread
         self.accept_thread = threading.Thread(
-            target=self._accept_match_process,
-            daemon=True,
-            name="AutoAcceptProcess"
+            target=self._accept_match_process, daemon=True, name="AutoAcceptProcess"
         )
         self.accept_thread.start()
 
     def _accept_match_process(self):
         """Main process for accepting a match."""
+        current_pos: Optional[tuple] = None
         try:
             self.logger.debug("Starting Auto Accept process")
             self.status_update_signal.emit("Match found! Starting Auto Accept...")
@@ -182,16 +190,22 @@ class AutoAcceptService(QObject):
 
             # Ensure CS2 window is brought to foreground with verification
             if not self._ensure_window_foreground():
-                self.logger.warning("Failed to bring CS2 window to foreground, but continuing...")
-                self.status_update_signal.emit("Warning: CS2 may not be in foreground, but trying to accept...")
-                # Don't return - continue with the process
+                self.logger.error(
+                    "Failed to bring CS2 window to foreground; aborting auto accept"
+                )
+                self.status_update_signal.emit("Error: CS2 not in foreground; aborting")
+                return
 
             # Additional wait to ensure window is fully active
             time.sleep(0.3)
 
             # Calculate Accept button position
-            button_x, button_y = self.screen_capture.calculate_accept_button_position(window_info)
-            self.logger.debug(f"Accept button position calculated: ({button_x}, {button_y}) for window {window_info}")
+            button_x, button_y = self.screen_capture.calculate_accept_button_position(
+                window_info
+            )
+            self.logger.debug(
+                f"Accept button position calculated: ({button_x}, {button_y}) for window {window_info}"
+            )
 
             # Monitor for Accept button and click when found
             accept_clicked = False
@@ -205,10 +219,25 @@ class AutoAcceptService(QObject):
                 # Check if Accept button is visible (green color)
                 current_color = self.screen_capture.get_pixel_color(button_x, button_y)
                 if current_color:
-                    self.logger.debug(f"Pixel color at ({button_x}, {button_y}): {current_color}")
+                    self.logger.debug(
+                        f"Pixel color at ({button_x}, {button_y}): {current_color}"
+                    )
 
-                if self.screen_capture.verify_accept_button_color(window_info, self.target_color, self.color_tolerance):
-                    self.logger.info(f"Accept button detected at ({button_x}, {button_y}), clicking...")
+                if self.screen_capture.verify_accept_button_color(
+                    window_info, self.target_color, self.color_tolerance
+                ):
+                    self.logger.info(
+                        f"Accept button detected at ({button_x}, {button_y}), clicking..."
+                    )
+
+                    if not self.screen_capture.is_window_foreground():
+                        self.logger.error(
+                            "CS2 window is not in foreground at click time; aborting"
+                        )
+                        self.status_update_signal.emit(
+                            "Error: CS2 lost foreground; aborting"
+                        )
+                        return
 
                     # Move mouse to Accept button and click
                     self._click_at_position(button_x, button_y)
@@ -217,28 +246,26 @@ class AutoAcceptService(QObject):
                     self.match_accepted_signal.emit()
                     self.status_update_signal.emit("Match accepted successfully!")
 
-
                     self.logger.info("Match accepted successfully")
                     break
 
                 # Small delay before next check
                 time.sleep(0.1)
 
-            # Restore mouse position
-            if current_pos:
-                win32api.SetCursorPos(current_pos)
-
             if not accept_clicked:
                 self.logger.warning("Accept button not found within timeout")
                 self.status_update_signal.emit("Timeout: Accept button not found")
-
-
 
         except Exception as e:
             self.logger.error(f"Error in Auto Accept process: {e}")
             self.status_update_signal.emit(f"Error: {e}")
 
         finally:
+            if current_pos:
+                try:
+                    win32api.SetCursorPos(current_pos)
+                except Exception as e:
+                    self.logger.error(f"Error restoring cursor position: {e}")
             self.accepting_in_progress = False
 
     def _ensure_window_foreground(self, max_attempts: int = 3) -> bool:
@@ -257,7 +284,9 @@ class AutoAcceptService(QObject):
                 self.logger.debug("CS2 window is already in foreground")
                 return True
 
-            self.logger.debug("CS2 window not in foreground, attempting to bring to front")
+            self.logger.debug(
+                "CS2 window not in foreground, attempting to bring to front"
+            )
 
             for attempt in range(max_attempts):
                 self.logger.debug(f"Foreground attempt {attempt + 1}/{max_attempts}")
@@ -269,17 +298,25 @@ class AutoAcceptService(QObject):
 
                     # Verify the window is now in foreground
                     if self.screen_capture.is_window_foreground():
-                        self.logger.debug("CS2 window successfully brought to foreground")
+                        self.logger.debug(
+                            "CS2 window successfully brought to foreground"
+                        )
                         return True
                     else:
-                        self.logger.warning(f"Attempt {attempt + 1}: Window activation failed, retrying...")
+                        self.logger.warning(
+                            f"Attempt {attempt + 1}: Window activation failed, retrying..."
+                        )
                         # Wait a bit longer before retry
                         time.sleep(0.3)
                 else:
-                    self.logger.warning(f"Attempt {attempt + 1}: Failed to call bring_window_to_front")
+                    self.logger.warning(
+                        f"Attempt {attempt + 1}: Failed to call bring_window_to_front"
+                    )
                     time.sleep(0.3)
 
-            self.logger.error("Failed to bring CS2 window to foreground after all attempts")
+            self.logger.error(
+                "Failed to bring CS2 window to foreground after all attempts"
+            )
             return False
 
         except Exception as e:
