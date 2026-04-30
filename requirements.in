@@ -1,9 +1,0 @@
-# Top-level runtime dependencies (pinned for reproducible installs)
-# Lockfile generation is currently aligned to Python 3.13.
-PySide6==6.10.2
-matplotlib==3.10.8
-numpy==2.4.2
-pywin32==311
-PyQtDarkTheme==0.1.7
-QtAwesome==1.4.1
-dxcam==0.0.5

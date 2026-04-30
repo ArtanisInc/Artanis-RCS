@@ -2,9 +2,9 @@
     "game_sensitivity": 0.54,
     "features": {
         "tts_enabled": true,
-        "bomb_timer_enabled": true,
-        "auto_accept_enabled": true,
-        "follow_rcs_enabled": true
+        "bomb_timer_enabled": false,
+        "auto_accept_enabled": false,
+        "follow_rcs_enabled": false
     },
     "follow_rcs": {
         "dot_size": 3,
