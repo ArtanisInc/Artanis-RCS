@@ -1,7 +1,9 @@
 """
 Centralized configuration management service.
 """
+
 import logging
+import re
 from typing import Dict, List, Any, Optional
 
 from core.models.weapon import WeaponProfile
@@ -11,6 +13,8 @@ from data.config_repository import ConfigRepository, CSVRepository
 class ConfigurationValidator:
     """Validates configuration data integrity."""
 
+    _WEAPON_NAME_RE = re.compile(r"^[a-z0-9_]+$")
+
     @staticmethod
     def validate_sensitivity(value: float) -> bool:
         """Validate sensitivity is within acceptable range."""
@@ -19,7 +23,7 @@ class ConfigurationValidator:
     @staticmethod
     def validate_weapon_data(weapon_data: Dict[str, Any]) -> bool:
         """Validate weapon configuration data."""
-        required_fields = ['name', 'length', 'multiple', 'sleep_divider']
+        required_fields = ["name", "length", "multiple", "sleep_divider"]
 
         try:
             # Check required fields exist
@@ -28,21 +32,27 @@ class ConfigurationValidator:
                     return False
 
             # Validate data types and ranges
-            name = weapon_data['name']
-            if not isinstance(name, str) or not name.strip():
+            name = weapon_data["name"]
+            if not isinstance(name, str):
                 return False
 
-            length = weapon_data['length']
+            name = name.strip()
+            if not name:
+                return False
+
+            if not ConfigurationValidator._WEAPON_NAME_RE.fullmatch(name):
+                return False
+
+            length = weapon_data["length"]
             if not isinstance(length, int) or length <= 0:
                 return False
 
-            multiple = weapon_data['multiple']
+            multiple = weapon_data["multiple"]
             if not isinstance(multiple, int) or multiple <= 0:
                 return False
 
-            sleep_divider = weapon_data['sleep_divider']
-            if not isinstance(sleep_divider, (int, float)
-                              ) or sleep_divider <= 0:
+            sleep_divider = weapon_data["sleep_divider"]
+            if not isinstance(sleep_divider, (int, float)) or sleep_divider <= 0:
                 return False
 
             return True
@@ -55,9 +65,13 @@ class ConfigurationValidator:
         """Validate features configuration."""
 
         try:
-
             # Validate boolean features
-            bool_features = ["tts_enabled", "bomb_timer_enabled"]
+            bool_features = [
+                "tts_enabled",
+                "bomb_timer_enabled",
+                "auto_accept_enabled",
+                "follow_rcs_enabled",
+            ]
             for feature in bool_features:
                 if feature in features_data:
                     if not isinstance(features_data[feature], bool):
@@ -77,20 +91,18 @@ class WeaponManager:
         self.logger = logging.getLogger("WeaponManager")
         self.profiles: Dict[str, WeaponProfile] = {}
 
-    def load_weapon_profiles(self,
-                             weapons_config: List[Dict[str,
-                                                       Any]],
-                             game_sensitivity: float) -> Dict[str,
-                                                              WeaponProfile]:
+    def load_weapon_profiles(
+        self, weapons_config: List[Dict[str, Any]], game_sensitivity: float
+    ) -> Dict[str, WeaponProfile]:
         """Load all weapon profiles from configuration."""
         profiles = {}
 
         for weapon_config in weapons_config:
             try:
-                if not ConfigurationValidator.validate_weapon_data(
-                        weapon_config):
+                if not ConfigurationValidator.validate_weapon_data(weapon_config):
                     self.logger.warning(
-                        f"Invalid weapon configuration: {weapon_config.get('name', 'unknown')}")
+                        f"Invalid weapon configuration: {weapon_config.get('name', 'unknown')}"
+                    )
                     continue
 
                 name = weapon_config["name"]
@@ -98,10 +110,10 @@ class WeaponManager:
 
                 # Load recoil data with sensitivity applied
                 recoil_data = self.csv_repository.load_weapon_pattern(
-                    csv_file, game_sensitivity)
+                    csv_file, game_sensitivity
+                )
                 if not recoil_data:
-                    self.logger.warning(
-                        f"Pattern not found for weapon: {name}")
+                    self.logger.warning(f"Pattern not found for weapon: {name}")
                     continue
 
                 # Create weapon profile
@@ -115,7 +127,7 @@ class WeaponManager:
                     sleep_suber=weapon_config.get("sleep_suber", 0.0),
                     jitter_timing=weapon_config.get("jitter_timing", 0.0),
                     jitter_movement=weapon_config.get("jitter_movement", 0.0),
-                    game_sensitivity=game_sensitivity
+                    game_sensitivity=game_sensitivity,
                 )
 
                 profiles[name] = profile
@@ -123,7 +135,8 @@ class WeaponManager:
 
             except Exception as e:
                 self.logger.error(
-                    f"Failed to load weapon {weapon_config.get('name', 'unknown')}: {e}")
+                    f"Failed to load weapon {weapon_config.get('name', 'unknown')}: {e}"
+                )
                 continue
 
         self.profiles = profiles
@@ -135,9 +148,8 @@ class WeaponManager:
         return profiles
 
     def update_weapon_sensitivity(
-            self,
-            weapon_name: str,
-            new_sensitivity: float) -> bool:
+        self, weapon_name: str, new_sensitivity: float
+    ) -> bool:
         """Update sensitivity for specific weapon."""
         if weapon_name not in self.profiles:
             raise KeyError(f"Weapon not found: {weapon_name}")
@@ -146,7 +158,8 @@ class WeaponManager:
             raise ValueError(f"Invalid sensitivity value: {new_sensitivity}")
 
         return self.profiles[weapon_name].update_sensitivity(
-            new_sensitivity, self.csv_repository)
+            new_sensitivity, self.csv_repository
+        )
 
     def update_all_weapons_sensitivity(self, new_sensitivity: float) -> int:
         """Update sensitivity for all weapons. Returns count of successful updates."""
@@ -156,12 +169,12 @@ class WeaponManager:
         success_count = 0
         for weapon_name in self.profiles.keys():
             try:
-                if self.update_weapon_sensitivity(
-                        weapon_name, new_sensitivity):
+                if self.update_weapon_sensitivity(weapon_name, new_sensitivity):
                     success_count += 1
             except Exception as e:
                 self.logger.warning(
-                    f"Failed to update sensitivity for {weapon_name}: {e}")
+                    f"Failed to update sensitivity for {weapon_name}: {e}"
+                )
 
         return success_count
 
@@ -170,9 +183,8 @@ class ConfigService:
     """Centralized configuration management service."""
 
     def __init__(
-            self,
-            config_repository: ConfigRepository,
-            csv_repository: CSVRepository):
+        self, config_repository: ConfigRepository, csv_repository: CSVRepository
+    ):
         self.logger = logging.getLogger("ConfigService")
         self.config_repository = config_repository
         self.csv_repository = csv_repository
@@ -226,7 +238,8 @@ class ConfigService:
         game_sensitivity = self.config.get("game_sensitivity", 1.0)
         if not ConfigurationValidator.validate_sensitivity(game_sensitivity):
             self.logger.warning(
-                f"Invalid global sensitivity {game_sensitivity}, using default")
+                f"Invalid global sensitivity {game_sensitivity}, using default"
+            )
             game_sensitivity = 1.0
             self.config["game_sensitivity"] = game_sensitivity
 
@@ -234,28 +247,30 @@ class ConfigService:
         weapons_config = self.config.get("weapons", [])
 
         self.weapon_profiles = self.weapon_manager.load_weapon_profiles(
-            weapons_config, game_sensitivity)
+            weapons_config, game_sensitivity
+        )
 
         # Load hotkeys
         self.hotkeys = self.config.get("hotkeys", {})
 
         # Validate and normalize features
         self._validate_and_normalize_features()
+        self._validate_and_normalize_gsi()
 
     def _validate_and_normalize_features(self) -> None:
         """Validate and normalize features configuration."""
         features = self.config.get("features", {})
 
         if not ConfigurationValidator.validate_features_data(features):
-            self.logger.warning(
-                "Invalid features configuration, applying defaults")
+            self.logger.warning("Invalid features configuration, applying defaults")
             features = {}
 
         # Apply defaults for missing values
         defaults = {
             "tts_enabled": True,
             "bomb_timer_enabled": False,
-            "follow_rcs_enabled": True
+            "auto_accept_enabled": False,
+            "follow_rcs_enabled": False,
         }
 
         for key, default_value in defaults.items():
@@ -263,6 +278,51 @@ class ConfigService:
                 features[key] = default_value
 
         self.config["features"] = features
+
+    def _validate_and_normalize_gsi(self) -> None:
+        """Validate and normalize GSI configuration."""
+        gsi = self.config.get("gsi", {})
+        if not isinstance(gsi, dict):
+            self.logger.warning("Invalid GSI configuration, applying defaults")
+            gsi = {}
+
+        defaults = {
+            "enabled": True,
+            "low_ammo_threshold": 5,
+            "server_host": "127.0.0.1",
+            "server_port": 59873,
+            "allow_remote": False,
+            "auth_token": "",
+        }
+
+        for key, default_value in defaults.items():
+            value = gsi.get(key, default_value)
+
+            if key in {"enabled", "allow_remote"} and not isinstance(value, bool):
+                value = default_value
+            elif key == "low_ammo_threshold" and (
+                not isinstance(value, int) or value < 0
+            ):
+                value = default_value
+            elif key == "server_port" and (
+                not isinstance(value, int) or not (1024 <= value <= 65535)
+            ):
+                value = default_value
+            elif key in {"server_host", "auth_token"}:
+                if not isinstance(value, str):
+                    value = default_value
+                else:
+                    value = value.strip()
+                    if key == "server_host" and not value:
+                        value = default_value
+                    if key == "auth_token" and any(
+                        ch in value for ch in ("\n", "\r", '"')
+                    ):
+                        value = default_value
+
+            gsi[key] = value
+
+        self.config["gsi"] = gsi
 
     def _create_default_config(self) -> None:
         """Create default configuration structure."""
@@ -272,42 +332,194 @@ class ConfigService:
                 "tts_enabled": True,
                 "bomb_timer_enabled": False,
                 "auto_accept_enabled": False,
-                "follow_rcs_enabled": False
+                "follow_rcs_enabled": False,
             },
-            "follow_rcs": {
-                "dot_size": 3,
-                "color": [0, 0, 255, 255]
-            },
+            "follow_rcs": {"dot_size": 3, "color": [0, 0, 255, 255]},
             "gsi": {
                 "enabled": True,
                 "low_ammo_threshold": 5,
                 "server_host": "127.0.0.1",
-                "server_port": 59873
+                "server_port": 59873,
+                "allow_remote": False,
+                "auth_token": "",
             },
             "hotkeys": {
                 "exit": "END",
                 "toggle_recoil": "INSERT",
-                "toggle_weapon_detection": "HOME"
+                "toggle_weapon_detection": "HOME",
             },
             "weapons": [
-                {"name": "ak47", "display_name": "AK-47", "length": 30, "multiple": 6, "sleep_divider": 6, "sleep_suber": -0.1, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "m4a4", "display_name": "M4A4", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.5, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "m4a1", "display_name": "M4A1-S", "length": 20, "multiple": 4, "sleep_divider": 4.0, "sleep_suber": -0.6, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "galil", "display_name": "Galil AR", "length": 35, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.8, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "famas", "display_name": "FAMAS", "length": 25, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.4, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "sg553", "display_name": "SG 553", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "aug", "display_name": "AUG", "length": 30, "multiple": 4, "sleep_divider": 4, "sleep_suber": -0.9, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "p90", "display_name": "P90", "length": 50, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.7, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "bizon", "display_name": "PP-BIZON", "length": 64, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0.9, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "ump45", "display_name": "UMP-45", "length": 25, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.4, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "mac10", "display_name": "MAC-10", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -2.2, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "mp5sd", "display_name": "MP5-SD", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": 0, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "mp7", "display_name": "MP7", "length": 30, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": 0.1, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "mp9", "display_name": "MP9", "length": 30, "multiple": 3, "sleep_divider": 3, "sleep_suber": -0.3, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "m249", "display_name": "M249", "length": 100, "multiple": 3, "sleep_divider": 3, "sleep_suber": -1, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "negev", "display_name": "NEGEV", "length": 150, "multiple": 3, "sleep_divider": 3.0, "sleep_suber": -1.5, "jitter_timing": 3.0, "jitter_movement": 5.0},
-                {"name": "cz75", "display_name": "CZ75-AUTO", "length": 12, "multiple": 3, "sleep_divider": 3, "sleep_suber": -3, "jitter_timing": 3.0, "jitter_movement": 5.0}
-            ]
+                {
+                    "name": "ak47",
+                    "display_name": "AK-47",
+                    "length": 30,
+                    "multiple": 6,
+                    "sleep_divider": 6,
+                    "sleep_suber": -0.1,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "m4a4",
+                    "display_name": "M4A4",
+                    "length": 30,
+                    "multiple": 4,
+                    "sleep_divider": 4,
+                    "sleep_suber": -0.5,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "m4a1",
+                    "display_name": "M4A1-S",
+                    "length": 20,
+                    "multiple": 4,
+                    "sleep_divider": 4.0,
+                    "sleep_suber": -0.6,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "galil",
+                    "display_name": "Galil AR",
+                    "length": 35,
+                    "multiple": 4,
+                    "sleep_divider": 4,
+                    "sleep_suber": -0.8,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "famas",
+                    "display_name": "FAMAS",
+                    "length": 25,
+                    "multiple": 4,
+                    "sleep_divider": 4,
+                    "sleep_suber": -0.4,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "sg553",
+                    "display_name": "SG 553",
+                    "length": 30,
+                    "multiple": 4,
+                    "sleep_divider": 4,
+                    "sleep_suber": -0.9,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "aug",
+                    "display_name": "AUG",
+                    "length": 30,
+                    "multiple": 4,
+                    "sleep_divider": 4,
+                    "sleep_suber": -0.9,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "p90",
+                    "display_name": "P90",
+                    "length": 50,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": -0.7,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "bizon",
+                    "display_name": "PP-BIZON",
+                    "length": 64,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": 0.9,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "ump45",
+                    "display_name": "UMP-45",
+                    "length": 25,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": -0.4,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "mac10",
+                    "display_name": "MAC-10",
+                    "length": 30,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": -2.2,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "mp5sd",
+                    "display_name": "MP5-SD",
+                    "length": 30,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": 0,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "mp7",
+                    "display_name": "MP7",
+                    "length": 30,
+                    "multiple": 3,
+                    "sleep_divider": 3.0,
+                    "sleep_suber": 0.1,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "mp9",
+                    "display_name": "MP9",
+                    "length": 30,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": -0.3,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "m249",
+                    "display_name": "M249",
+                    "length": 100,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": -1,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "negev",
+                    "display_name": "NEGEV",
+                    "length": 150,
+                    "multiple": 3,
+                    "sleep_divider": 3.0,
+                    "sleep_suber": -1.5,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+                {
+                    "name": "cz75",
+                    "display_name": "CZ75-AUTO",
+                    "length": 12,
+                    "multiple": 3,
+                    "sleep_divider": 3,
+                    "sleep_suber": -3,
+                    "jitter_timing": 3.0,
+                    "jitter_movement": 5.0,
+                },
+            ],
         }
         self.logger.info("Created default configuration")
 
@@ -331,8 +543,7 @@ class ConfigService:
             self.weapon_profiles[profile.name] = profile
             return self.save_config()
         except Exception as e:
-            self.logger.error(
-                f"Failed to save weapon profile {profile.name}: {e}")
+            self.logger.error(f"Failed to save weapon profile {profile.name}: {e}")
             return False
 
     def get_weapon_display_name(self, internal_name: str) -> Optional[str]:
@@ -350,18 +561,17 @@ class ConfigService:
             if weapon_data.get("name") == internal_name:
                 return weapon_data.get("display_name", internal_name)
 
-        self.logger.warning(
-            f"Display name not found for weapon: {internal_name}")
+        self.logger.warning(f"Display name not found for weapon: {internal_name}")
         return internal_name
 
     def update_weapon_sensitivity(
-            self,
-            weapon_name: str,
-            new_sensitivity: float) -> bool:
+        self, weapon_name: str, new_sensitivity: float
+    ) -> bool:
         """Update sensitivity for specific weapon."""
         try:
             success = self.weapon_manager.update_weapon_sensitivity(
-                weapon_name, new_sensitivity)
+                weapon_name, new_sensitivity
+            )
             if success:
                 self.config["game_sensitivity"] = new_sensitivity
             return success
@@ -373,13 +583,15 @@ class ConfigService:
         """Update sensitivity for all weapons."""
         try:
             success_count = self.weapon_manager.update_all_weapons_sensitivity(
-                new_sensitivity)
+                new_sensitivity
+            )
             total_weapons = len(self.weapon_profiles)
 
             if success_count > 0:
                 self.config["game_sensitivity"] = new_sensitivity
                 self.logger.info(
-                    f"Global sensitivity updated: {new_sensitivity} ({success_count}/{total_weapons} weapons)")
+                    f"Global sensitivity updated: {new_sensitivity} ({success_count}/{total_weapons} weapons)"
+                )
 
             return success_count == total_weapons
 

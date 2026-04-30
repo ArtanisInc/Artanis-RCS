@@ -2,9 +2,10 @@
 setlocal enabledelayedexpansion
 
 :: --- Configuration ---
-set "PYTHON_MIN_VERSION=3.9"
+set "PYTHON_MIN_VERSION=3.13"
 set "REQUIRED_FILE=requirements.txt"
 set "MAIN_SCRIPT=main.py"
+set "VENV_DIR=.venv"
 
 echo ===========================================
 echo ARTANIS'S RCS - Recoil Compensation System
@@ -20,6 +21,12 @@ if !errorlevel! neq 0 (
 call :check_python_version
 if !errorlevel! neq 0 (
     echo FATAL ERROR: Python version check failed. Exiting.
+    goto :end
+)
+
+call :ensure_venv
+if !errorlevel! neq 0 (
+    echo FATAL ERROR: Virtual environment setup failed. Exiting.
     goto :end
 )
 
@@ -44,12 +51,33 @@ if !errorlevel! neq 0 (
     echo ERROR: 'python' command not found. Please ensure Python is installed and in your system PATH.
     exit /b 1
 )
-where /q pip
-if !errorlevel! neq 0 (
-    echo WARNING: 'pip' command not found. Cannot install dependencies automatically.
-    exit /b 2
-)
 echo Prerequisites met.
+exit /b 0
+
+:ensure_venv
+echo.
+echo :: Ensuring local virtual environment...
+
+set "VENV_PY=%VENV_DIR%\Scripts\python.exe"
+
+if exist "%VENV_PY%" (
+    echo Virtual environment found: %VENV_DIR%
+) else (
+    echo Creating virtual environment: %VENV_DIR%
+    python -m venv "%VENV_DIR%"
+    if !errorlevel! neq 0 (
+        echo ERROR: Failed to create virtual environment.
+        exit /b 1
+    )
+)
+
+"%VENV_PY%" -m pip --version > nul 2>&1
+if !errorlevel! neq 0 (
+    echo ERROR: pip is not available in the virtual environment.
+    exit /b 1
+)
+
+echo Virtual environment ready.
 exit /b 0
 
 :check_python_version
@@ -92,7 +120,7 @@ if not exist "%REQUIRED_FILE%" (
     exit /b 0
 )
 
-pip install -r "%REQUIRED_FILE%" --upgrade --quiet
+"%VENV_PY%" -m pip install --disable-pip-version-check -r "%REQUIRED_FILE%" --quiet
 if !errorlevel! neq 0 (
     echo ERROR: Dependency installation failed. Please check the above errors.
     exit /b 1
@@ -109,7 +137,7 @@ if not exist "%MAIN_SCRIPT%" (
     exit /b 1
 )
 
-python "%MAIN_SCRIPT%"
+"%VENV_PY%" "%MAIN_SCRIPT%"
 exit /b !errorlevel!
 
 :: --- Exit ---

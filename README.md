@@ -3,7 +3,7 @@
 <p align="center"><strong>Advanced recoil compensation system for Counter-Strike 2 with automatic weapon detection</strong></p>
 
 <p align="center">
-  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.9+-blue.svg" /></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/python-3.13+-blue.svg" /></a>
   <a href="https://www.microsoft.com/windows"><img src="https://img.shields.io/badge/platform-Windows-lightgrey.svg" /></a>
   <a href="https://github.com/ArtanisInc/Artanis-RCS/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-orange.svg" /></a>
 </p>
@@ -98,7 +98,7 @@ artanis-rcs/
 
 ### **System Requirements**
 - **Operating System**: Windows 10/11 (required for pywin32 and screen capture)
-- **Python**: Version 3.9 or higher
+- **Python**: Version 3.13 or higher
 
 ### **Dependencies**
 - **PySide6**: Modern GUI framework for user interface

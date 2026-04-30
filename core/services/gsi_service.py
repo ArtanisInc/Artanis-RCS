@@ -1,6 +1,7 @@
 """
 Game State Integration service for Counter-Strike 2.
 """
+
 import json
 import logging
 import re
@@ -26,7 +27,7 @@ class GSIConfigService:
 
     def generate_config_file(self, gsi_config: Dict[str, Any]) -> bool:
         """
-        Generate GSI configuration file if it doesn't exist.
+        Generate or refresh the GSI configuration file.
         """
         try:
             cs2_config_path = self._find_cs2_config_directory()
@@ -36,17 +37,25 @@ class GSIConfigService:
                 return False
 
             config_file_path = cs2_config_path / self.config_filename
-
-            if config_file_path.exists():
-                self.logger.debug(f"GSI config file already exists: {config_file_path}")
-                return True
-
             config_content = self._generate_config_content(gsi_config)
 
-            with open(config_file_path, 'w', encoding='utf-8') as f:
+            existing_content = None
+            if config_file_path.exists():
+                existing_content = config_file_path.read_text(encoding="utf-8")
+
+            if self._normalize_config_content(existing_content) == config_content:
+                self.logger.debug(
+                    f"GSI config file already up to date: {config_file_path}"
+                )
+                return True
+
+            with open(config_file_path, "w", encoding="utf-8", newline="\n") as f:
                 f.write(config_content)
 
-            self.logger.info(f"GSI config file created: {config_file_path}")
+            if existing_content is None:
+                self.logger.info(f"GSI config file created: {config_file_path}")
+            else:
+                self.logger.info(f"GSI config file updated: {config_file_path}")
             return True
 
         except Exception as e:
@@ -62,7 +71,10 @@ class GSIConfigService:
                 if not steam_path.exists():
                     continue
 
-                cs2_config_path = steam_path / "steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg"
+                cs2_config_path = (
+                    steam_path
+                    / "steamapps/common/Counter-Strike Global Offensive/game/csgo/cfg"
+                )
 
                 if cs2_config_path.exists():
                     self.logger.debug(f"Found CS2 config directory: {cs2_config_path}")
@@ -80,8 +92,9 @@ class GSIConfigService:
         main_steam_path = None
 
         try:
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                r"SOFTWARE\WOW6432Node\Valve\Steam") as key:
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\WOW6432Node\Valve\Steam"
+            ) as key:
                 install_path = winreg.QueryValueEx(key, "InstallPath")[0]
                 main_steam_path = Path(install_path)
                 steam_paths.append(main_steam_path)
@@ -89,8 +102,9 @@ class GSIConfigService:
             pass
 
         try:
-            with winreg.OpenKey(winreg.HKEY_CURRENT_USER,
-                                r"SOFTWARE\Valve\Steam") as key:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER, r"SOFTWARE\Valve\Steam"
+            ) as key:
                 install_path = winreg.QueryValueEx(key, "SteamPath")[0]
                 main_steam_path = Path(install_path)
                 steam_paths.append(main_steam_path)
@@ -117,20 +131,22 @@ class GSIConfigService:
                 self.logger.debug(f"libraryfolders.vdf not found at {vdf_path}")
                 return library_paths
 
-            with open(vdf_path, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(vdf_path, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             path_pattern = r'"path"\s+"([^"]+)"'
             matches = re.findall(path_pattern, content, re.IGNORECASE)
 
             for match in matches:
-                library_path = Path(match.replace('\\\\', '\\'))
+                library_path = Path(match.replace("\\\\", "\\"))
 
                 if library_path.exists():
                     library_paths.append(library_path)
                     self.logger.debug(f"Found Steam library: {library_path}")
                 else:
-                    self.logger.debug(f"Steam library path does not exist: {library_path}")
+                    self.logger.debug(
+                        f"Steam library path does not exist: {library_path}"
+                    )
 
         except Exception as e:
             self.logger.warning(f"Error parsing libraryfolders.vdf: {e}")
@@ -141,7 +157,12 @@ class GSIConfigService:
         """Generate the GSI configuration file content."""
         host = gsi_config.get("server_host", "127.0.0.1")
         port = gsi_config.get("server_port", 59873)
+        token = self._sanitize_auth_token(gsi_config.get("auth_token"))
         uri = f"http://{host}:{port}"
+
+        auth_block = ""
+        if token:
+            auth_block = f'\n    "auth"\n    {{\n        "token" "{token}"\n    }}'
 
         return f'''"Artanis RCS Integration"
 {{
@@ -149,7 +170,7 @@ class GSIConfigService:
     "timeout"               "5.0"
     "buffer"                "0.1"
     "throttle"              "0.1"
-    "heartbeat"             "10.0"
+    "heartbeat"             "10.0"{auth_block}
     "data"
     {{
         "player_state"          "1"
@@ -158,6 +179,32 @@ class GSIConfigService:
         "bomb"                  "1"
     }}
 }}'''
+
+    def _sanitize_auth_token(self, token: Any) -> Optional[str]:
+        """Return a safe auth token string for cfg emission, or None."""
+        if token is None:
+            return None
+
+        if not isinstance(token, str):
+            self.logger.warning("GSI auth_token must be a string; ignoring")
+            return None
+
+        token = token.strip()
+        if not token:
+            return None
+
+        if any(ch in token for ch in ("\n", "\r", '"')):
+            self.logger.warning("GSI auth_token contains invalid characters; ignoring")
+            return None
+
+        return token
+
+    @staticmethod
+    def _normalize_config_content(content: Optional[str]) -> Optional[str]:
+        """Normalize config file text for stable comparisons."""
+        if content is None:
+            return None
+        return content.replace("\r\n", "\n").strip()
 
 
 class GSIRequestHandler(BaseHTTPRequestHandler):
@@ -170,7 +217,7 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Handle POST requests from CS2 GSI."""
         try:
-            content_length = int(self.headers.get('Content-Length', 0))
+            content_length = int(self.headers.get("Content-Length", 0))
             if content_length == 0:
                 self.send_response(400)
                 self.end_headers()
@@ -179,19 +226,24 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
             raw_data = self.rfile.read(content_length)
 
             try:
-                gsi_data = json.loads(raw_data.decode('utf-8'))
+                gsi_data = json.loads(raw_data.decode("utf-8"))
             except json.JSONDecodeError as e:
                 self.gsi_service.logger.error(f"JSON decode error: {e}")
                 self.send_response(400)
                 self.end_headers()
                 return
 
+            if not self.gsi_service._is_authorized(gsi_data):
+                self.send_response(403)
+                self.end_headers()
+                return
+
             self.gsi_service._submit_gsi_data(gsi_data)
 
             self.send_response(200)
-            self.send_header('Content-type', 'text/plain')
+            self.send_header("Content-type", "text/plain")
             self.end_headers()
-            self.wfile.write(b'OK')
+            self.wfile.write(b"OK")
 
         except Exception as e:
             self.gsi_service.logger.error(f"Request handling error: {e}")
@@ -206,12 +258,39 @@ class GSIRequestHandler(BaseHTTPRequestHandler):
 class GSIService:
     """Game State Integration service for CS2."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 59873,
-                 gsi_config: Optional[Dict[str, Any]] = None,
-                 auto_generate_config: bool = True):
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 59873,
+        gsi_config: Optional[Dict[str, Any]] = None,
+        auto_generate_config: bool = True,
+    ):
         self.logger = logging.getLogger("GSIService")
-        self.host = host
+        self.config_service = GSIConfigService()
+
+        allow_remote = False
+        if isinstance(gsi_config, dict):
+            allow_remote = bool(gsi_config.get("allow_remote", False))
+
+        original_host = host
+        self.host = self._normalize_bind_host(host, allow_remote=allow_remote)
+        if isinstance(original_host, str):
+            original_host = original_host.strip()
+            if (
+                original_host
+                and original_host not in {"127.0.0.1", "localhost", "::1"}
+                and not allow_remote
+            ):
+                self.logger.warning(
+                    f"GSI server_host '{original_host}' is not loopback; binding to 127.0.0.1 (set gsi.allow_remote=true to override)"
+                )
         self.port = port
+
+        self.expected_auth_token: Optional[str] = None
+        if isinstance(gsi_config, dict):
+            token = self.config_service._sanitize_auth_token(gsi_config.get("auth_token"))
+            if token:
+                self.expected_auth_token = token
 
         self.server: Optional[HTTPServer] = None
         self.server_thread: Optional[threading.Thread] = None
@@ -230,23 +309,65 @@ class GSIService:
         self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="GSI")
 
         self._tracked_fields = {
-            'health', 'armor', 'flashing', 'burning',
-            'active_weapon_name', 'active_weapon_ammo', 'bomb_planted', 'has_defuse_kit'
+            "health",
+            "armor",
+            "flashing",
+            "burning",
+            "active_weapon_name",
+            "active_weapon_ammo",
+            "bomb_planted",
+            "has_defuse_kit",
         }
         self._last_field_values: Dict[str, Any] = {}
 
-        self.config_service = GSIConfigService()
-
         config_status = "existing"
         if auto_generate_config and gsi_config:
-            config_generated = self.config_service.generate_config_file(gsi_config)
+            config_for_file = dict(gsi_config)
+            config_for_file["server_host"] = self.host
+            config_generated = self.config_service.generate_config_file(config_for_file)
             if config_generated:
                 config_status = "auto-generated"
             else:
-                self.logger.warning("GSI configuration file could not be generated automatically")
+                self.logger.warning(
+                    "GSI configuration file could not be generated automatically"
+                )
                 config_status = "generation failed"
 
-        self.logger.info(f"GSI Service ready: config {config_status}, server on {host}:{port}")
+        self.logger.info(
+            f"GSI Service ready: config {config_status}, server on {self.host}:{self.port}"
+        )
+
+    @staticmethod
+    def _normalize_bind_host(host: str, *, allow_remote: bool) -> str:
+        if not isinstance(host, str):
+            return "127.0.0.1"
+
+        host = host.strip()
+        if not host:
+            return "127.0.0.1"
+
+        loopback_hosts = {"127.0.0.1", "localhost", "::1"}
+        if host in loopback_hosts:
+            return "127.0.0.1"
+
+        if allow_remote:
+            return host
+
+        return "127.0.0.1"
+
+    def _is_authorized(self, gsi_data: Dict[str, Any]) -> bool:
+        if not self.expected_auth_token:
+            return True
+
+        auth = gsi_data.get("auth")
+        if not isinstance(auth, dict):
+            return False
+
+        token = auth.get("token")
+        if not isinstance(token, str):
+            return False
+
+        return token == self.expected_auth_token
 
     def start_server(self) -> bool:
         """Start the GSI HTTP server."""
@@ -254,15 +375,14 @@ class GSIService:
             return True
 
         try:
+
             def handler_factory(*args, **kwargs):
                 return GSIRequestHandler(self, *args, **kwargs)
 
             self.server = HTTPServer((self.host, self.port), handler_factory)
 
             self.server_thread = threading.Thread(
-                target=self._run_server,
-                daemon=True,
-                name="GSIServer"
+                target=self._run_server, daemon=True, name="GSIServer"
             )
             self.server_thread.start()
 
@@ -360,14 +480,18 @@ class GSIService:
     def _extract_tracked_fields(self, player_state: PlayerState) -> Dict[str, Any]:
         """Extract fields we want to track for changes."""
         return {
-            'health': player_state.health,
-            'armor': player_state.armor,
-            'flashing': player_state.flashing,
-            'burning': player_state.burning,
-            'active_weapon_name': player_state.active_weapon.name if player_state.active_weapon else None,
-            'active_weapon_ammo': player_state.active_weapon.ammo_clip if player_state.active_weapon else 0,
-            'bomb_planted': player_state.bomb_planted,
-            'has_defuse_kit': player_state.has_defuse_kit
+            "health": player_state.health,
+            "armor": player_state.armor,
+            "flashing": player_state.flashing,
+            "burning": player_state.burning,
+            "active_weapon_name": player_state.active_weapon.name
+            if player_state.active_weapon
+            else None,
+            "active_weapon_ammo": player_state.active_weapon.ammo_clip
+            if player_state.active_weapon
+            else 0,
+            "bomb_planted": player_state.bomb_planted,
+            "has_defuse_kit": player_state.has_defuse_kit,
         }
 
     def _has_significant_changes(self, current_fields: Dict[str, Any]) -> bool:
@@ -385,19 +509,24 @@ class GSIService:
         """Execute callbacks asynchronously to avoid blocking."""
         for callback_name, callback in self.update_callbacks.items():
             try:
-                self._executor.submit(self._safe_callback_execution, callback_name, callback, player_state)
+                self._executor.submit(
+                    self._safe_callback_execution, callback_name, callback, player_state
+                )
             except Exception as e:
-                self.logger.error(f"Callback submission error for '{callback_name}': {e}")
+                self.logger.error(
+                    f"Callback submission error for '{callback_name}': {e}"
+                )
 
-    def _safe_callback_execution(self, callback_name: str, callback: Callable, player_state: PlayerState) -> None:
+    def _safe_callback_execution(
+        self, callback_name: str, callback: Callable, player_state: PlayerState
+    ) -> None:
         """Safely execute a callback with error handling."""
         try:
             callback(player_state)
         except Exception as e:
             self.logger.error(f"Callback '{callback_name}' execution error: {e}")
 
-    def _extract_player_state(
-            self, gsi_data: Dict[str, Any]) -> Optional[PlayerState]:
+    def _extract_player_state(self, gsi_data: Dict[str, Any]) -> Optional[PlayerState]:
         """Extract player state from GSI data with caching."""
         try:
             player_data = gsi_data.get("player", {})
@@ -429,7 +558,7 @@ class GSIService:
                 active_weapon=active_weapon,
                 timestamp=time.time(),
                 has_defuse_kit=has_defuse_kit,
-                bomb_planted=bomb_planted
+                bomb_planted=bomb_planted,
             )
 
         except Exception as e:
@@ -451,7 +580,7 @@ class GSIService:
                     state=weapon_data.get("state", "inactive"),
                     ammo_clip=weapon_data.get("ammo_clip", 0),
                     ammo_clip_max=weapon_data.get("ammo_clip_max", 0),
-                    ammo_reserve=weapon_data.get("ammo_reserve", 0)
+                    ammo_reserve=weapon_data.get("ammo_reserve", 0),
                 )
                 weapons[slot] = weapon
 
@@ -462,7 +591,8 @@ class GSIService:
         return weapons
 
     def register_callback(
-            self, name: str, callback: Callable[[PlayerState], None]) -> None:
+        self, name: str, callback: Callable[[PlayerState], None]
+    ) -> None:
         """Register callback for GSI updates."""
         with self.lock:
             self.update_callbacks[name] = callback
