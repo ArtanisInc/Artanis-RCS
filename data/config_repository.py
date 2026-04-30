@@ -37,6 +37,14 @@ CONFIG_SCHEMA = {
                 "auth_token": {"type": "string"},
             },
         },
+        "bomb_timer": {
+            "type": "object",
+            "properties": {
+                "scale": {"type": "number", "minimum": 0.5, "maximum": 2.0},
+                "x": {"type": "integer"},
+                "y": {"type": "integer"},
+            },
+        },
         "weapons": {
             "type": "array",
             "minItems": 1,

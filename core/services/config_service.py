@@ -256,6 +256,7 @@ class ConfigService:
         # Validate and normalize features
         self._validate_and_normalize_features()
         self._validate_and_normalize_gsi()
+        self._validate_and_normalize_bomb_timer()
 
     def _validate_and_normalize_features(self) -> None:
         """Validate and normalize features configuration."""
@@ -324,6 +325,31 @@ class ConfigService:
 
         self.config["gsi"] = gsi
 
+    def _validate_and_normalize_bomb_timer(self) -> None:
+        """Validate and normalize bomb timer overlay configuration."""
+        bomb_timer = self.config.get("bomb_timer", {})
+        if not isinstance(bomb_timer, dict):
+            self.logger.warning(
+                "Invalid bomb timer overlay configuration, applying defaults"
+            )
+            bomb_timer = {}
+
+        scale = bomb_timer.get("scale", 1.0)
+        if not isinstance(scale, (int, float)):
+            scale = 1.0
+        bomb_timer["scale"] = max(0.5, min(2.0, float(scale)))
+
+        x = bomb_timer.get("x")
+        y = bomb_timer.get("y")
+        if not isinstance(x, int) or not isinstance(y, int):
+            bomb_timer.pop("x", None)
+            bomb_timer.pop("y", None)
+        else:
+            bomb_timer["x"] = x
+            bomb_timer["y"] = y
+
+        self.config["bomb_timer"] = bomb_timer
+
     def _create_default_config(self) -> None:
         """Create default configuration structure."""
         self.config = {
@@ -335,6 +361,7 @@ class ConfigService:
                 "follow_rcs_enabled": False,
             },
             "follow_rcs": {"dot_size": 3, "color": [0, 0, 255, 255]},
+            "bomb_timer": {"scale": 1.0},
             "gsi": {
                 "enabled": True,
                 "low_ammo_threshold": 5,

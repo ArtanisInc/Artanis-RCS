@@ -266,7 +266,7 @@ class MainWindow(QMainWindow):
 
         self.control_panel = ControlPanel()
 
-        self.bomb_timer_overlay = BombTimerOverlay()
+        self.bomb_timer_overlay = BombTimerOverlay(self.config_service)
 
         self._setup_ui()
         self._setup_connections()

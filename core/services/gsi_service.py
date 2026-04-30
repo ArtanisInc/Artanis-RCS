@@ -537,7 +537,8 @@ class GSIService:
             weapons_data = player_data.get("weapons", {})
 
             round_data = gsi_data.get("round", {})
-            bomb_planted = round_data.get("bomb", "") == "planted"
+            bomb_status = round_data.get("bomb", "")
+            bomb_planted = bomb_status == "planted"
 
             has_defuse_kit = "defusekit" in state
 
@@ -559,6 +560,7 @@ class GSIService:
                 timestamp=time.time(),
                 has_defuse_kit=has_defuse_kit,
                 bomb_planted=bomb_planted,
+                bomb_status=bomb_status if isinstance(bomb_status, str) else "",
             )
 
         except Exception as e:
